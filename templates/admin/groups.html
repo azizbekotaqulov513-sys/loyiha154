@@ -1,0 +1,210 @@
+{% extends "admin/layout.html" %}
+
+{% block page_title %}
+    <i class="fas fa-users-rectangle text-purple-400 mr-2"></i> Guruhlar Boshqaruvi
+{% endblock %}
+
+{% block content %}
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+    <div>
+        <h2 class="text-xl font-bold text-white">O'quv Guruhlari</h2>
+        <p class="text-xs text-slate-400">Dars jadvali, xonalar va biriktirilgan o'qituvchilar</p>
+    </div>
+    {% if current_user.role in ['superadmin', 'admin'] %}
+    <button onclick="openModal('add-group-modal')" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs font-extrabold shadow-lg shadow-cyan-500/20 transition-all">
+        <i class="fas fa-plus-circle mr-1.5"></i> Yangi guruh ochish
+    </button>
+    {% endif %}
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for g in groups %}
+    <div class="glass-panel p-6 rounded-3xl border border-slate-800 flex flex-col justify-between group">
+        <div>
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-xs font-bold px-3 py-1 rounded-full bg-blue-500/20 text-cyan-300 border border-blue-500/30">
+                    {{ g.course_title }}
+                </span>
+                <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300">
+                    {{ g.students_count }} o‘quvchi
+                </span>
+            </div>
+
+            <h3 class="text-xl font-bold text-white mb-3 group-hover:text-cyan-400 transition-colors">{{ g.name }}</h3>
+
+            <div class="space-y-2.5 py-4 border-t border-slate-800/80 text-xs">
+                <div class="flex justify-between">
+                    <span class="text-slate-400"><i class="fas fa-chalkboard-user mr-1.5 text-cyan-400"></i> Ustoz:</span>
+                    <span class="font-bold text-white">{{ g.teacher_name }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400"><i class="far fa-clock mr-1.5 text-blue-400"></i> Dars vaqti:</span>
+                    <span class="font-bold text-slate-200">{{ g.schedule or 'Belgilanmagan' }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400"><i class="fas fa-door-open mr-1.5 text-emerald-400"></i> Dars xonasi:</span>
+                    <span class="font-bold text-emerald-400">{{ g.room or 'Xona —' }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="pt-4 border-t border-slate-800/80 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <a href="{{ url_for('admin_students', group_id=g.id) }}" class="text-xs font-bold text-cyan-400 hover:underline">
+                    O'quvchilar &rarr;
+                </a>
+                <a href="{{ url_for('admin_group_chat', id=g.id) }}" class="px-2.5 py-1 rounded-lg bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 text-xs font-bold border border-purple-500/30 flex items-center space-x-1">
+                    <i class="fas fa-comments"></i>
+                    <span>Chat</span>
+                </a>
+            </div>
+
+            {% if current_user.role in ['superadmin', 'admin'] %}
+            <div class="flex items-center space-x-2">
+                <button onclick="openEditGroup('{{ g.id }}', '{{ g.name }}', '{{ g.course_id }}', '{{ g.teacher_id }}', '{{ g.room }}', '{{ g.schedule }}')" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs">
+                    <i class="fas fa-pen"></i>
+                </button>
+                <form method="POST" action="{{ url_for('group_delete', id=g.id) }}" onsubmit="return confirm('Guruhni o\'chirmoqchimisiz?');" class="inline">
+                    <button type="submit" class="p-1.5 text-slate-500 hover:text-red-400 text-xs">
+                        <i class="fas fa-trash-can"></i>
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- MODAL: ADD GROUP -->
+<div id="add-group-modal" class="modal-container hidden fixed inset-0 z-50 modal-backdrop items-center justify-center p-4">
+    <div class="glass-panel bg-slate-900 border border-slate-700 max-w-lg w-full rounded-3xl p-8 shadow-2xl relative">
+        <button onclick="closeModal('add-group-modal')" class="absolute top-5 right-5 text-slate-400 hover:text-white text-xl">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <h3 class="text-xl font-bold text-white mb-6 flex items-center space-x-2">
+            <i class="fas fa-users-rectangle text-purple-400"></i>
+            <span>Yangi Guruh Ochish</span>
+        </h3>
+
+        <form method="POST" action="{{ url_for('group_create') }}" class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Guruh Nomi *</label>
+                <input type="text" name="name" required placeholder="Masalan: IELTS-Target-7.5" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Kurs *</label>
+                    <select name="course_id" required class="w-full px-3 py-2.5 rounded-xl form-input-dark text-sm bg-slate-900">
+                        <option value="">Kursni tanlang</option>
+                        {% for c in courses %}
+                            <option value="{{ c.id }}">{{ c.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Ustoz *</label>
+                    <select name="teacher_id" required class="w-full px-3 py-2.5 rounded-xl form-input-dark text-sm bg-slate-900">
+                        <option value="">Ustozni tanlang</option>
+                        {% for t in teachers %}
+                            <option value="{{ t.id }}">{{ t.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Dars Jadvali</label>
+                <input type="text" name="schedule" placeholder="Dush-Chor-Jum 16:00 - 18:00" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Xona</label>
+                <input type="text" name="room" placeholder="Xona 204" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+            </div>
+
+            <div class="pt-2 flex space-x-3">
+                <button type="button" onclick="closeModal('add-group-modal')" class="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-bold transition-all">
+                    Bekor qilish
+                </button>
+                <button type="submit" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-sm font-extrabold shadow-lg shadow-cyan-500/20 transition-all">
+                    Guruhni ochish
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: EDIT GROUP -->
+<div id="edit-group-modal" class="modal-container hidden fixed inset-0 z-50 modal-backdrop items-center justify-center p-4">
+    <div class="glass-panel bg-slate-900 border border-slate-700 max-w-lg w-full rounded-3xl p-8 shadow-2xl relative">
+        <button onclick="closeModal('edit-group-modal')" class="absolute top-5 right-5 text-slate-400 hover:text-white text-xl">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <h3 class="text-xl font-bold text-white mb-6 flex items-center space-x-2">
+            <i class="fas fa-pen-to-square text-cyan-400"></i>
+            <span>Guruhni Tahrirlash</span>
+        </h3>
+
+        <form id="edit-group-form" method="POST" action="" class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Guruh Nomi *</label>
+                <input type="text" name="name" id="edit-group-name" required class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Kurs *</label>
+                    <select name="course_id" id="edit-group-course" required class="w-full px-3 py-2.5 rounded-xl form-input-dark text-sm bg-slate-900">
+                        {% for c in courses %}
+                            <option value="{{ c.id }}">{{ c.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Ustoz *</label>
+                    <select name="teacher_id" id="edit-group-teacher" required class="w-full px-3 py-2.5 rounded-xl form-input-dark text-sm bg-slate-900">
+                        {% for t in teachers %}
+                            <option value="{{ t.id }}">{{ t.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Dars Jadvali</label>
+                <input type="text" name="schedule" id="edit-group-schedule" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Xona</label>
+                <input type="text" name="room" id="edit-group-room" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+            </div>
+
+            <div class="pt-2 flex space-x-3">
+                <button type="button" onclick="closeModal('edit-group-modal')" class="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-bold transition-all">
+                    Bekor qilish
+                </button>
+                <button type="submit" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-sm font-extrabold shadow-lg shadow-cyan-500/20 transition-all">
+                    Saqlash
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openEditGroup(id, name, courseId, teacherId, room, schedule) {
+    document.getElementById('edit-group-form').action = '/admin/groups/' + id + '/update';
+    document.getElementById('edit-group-name').value = name;
+    document.getElementById('edit-group-course').value = courseId;
+    document.getElementById('edit-group-teacher').value = teacherId;
+    document.getElementById('edit-group-room').value = room || '';
+    document.getElementById('edit-group-schedule').value = schedule || '';
+    openModal('edit-group-modal');
+}
+</script>
+{% endblock %}

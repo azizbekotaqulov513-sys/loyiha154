@@ -1,0 +1,254 @@
+{% extends "admin/layout.html" %}
+
+{% block page_title %}
+    <i class="fas fa-gear text-cyan-400 mr-2"></i> Tizim va Telegram Sozlamalari
+{% endblock %}
+
+{% block content %}
+<form method="POST" action="{{ url_for('admin_settings') }}" class="space-y-8 max-w-5xl">
+
+    <!-- 1. TELEGRAM BOT INTEGRATION CARD -->
+    <div class="glass-panel p-6 sm:p-8 rounded-3xl border border-blue-500/30 shadow-2xl">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 rounded-2xl bg-blue-600/20 text-cyan-400 flex items-center justify-center text-2xl">
+                    <i class="fab fa-telegram"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Telegram Bot Integratsiyasi</h3>
+                    <p class="text-xs text-slate-400">Bot orqali avtomatik baholar va ogohlantirishlar yuboriladi</p>
+                </div>
+            </div>
+
+            <!-- Bot Status Badge -->
+            <div>
+                {% if bot_status_ok %}
+                    <span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                        <i class="fas fa-check-circle text-emerald-400"></i>
+                        <span>{{ bot_status_msg }}</span>
+                    </span>
+                {% else %}
+                    <span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                        <i class="fas fa-circle-exclamation text-amber-400"></i>
+                        <span>{{ bot_status_msg }}</span>
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="pt-6 space-y-4">
+            <div class="p-4 rounded-2xl bg-blue-950/40 border border-blue-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-blue-600/30 text-cyan-400 flex items-center justify-center text-xl shrink-0">
+                        <i class="fab fa-telegram"></i>
+                    </div>
+                    <div>
+                        <span class="text-xs font-bold text-white block">Faol Telegram Bot:</span>
+                        <a href="https://t.me/kino05_promaks_bot" target="_blank" class="text-sm font-black font-mono text-cyan-400 hover:underline">
+                            @kino05_promaks_bot
+                        </a>
+                    </div>
+                </div>
+                <a href="https://t.me/kino05_promaks_bot" target="_blank" class="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs font-bold shadow-md transition-all inline-flex items-center space-x-1.5 self-start sm:self-auto">
+                    <span>Botga o'tish</span>
+                    <i class="fas fa-arrow-up-right-from-square text-[10px]"></i>
+                </a>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-2">Telegram Bot Token (HTTP API Token)</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+                        <i class="fas fa-key"></i>
+                    </span>
+                    <input type="text" name="telegram_bot_token" value="{{ bot_token }}" placeholder="8968202615:AAECQov89mhX1UFIL_GaDRP2FGqE6cxstwM" class="w-full pl-10 pr-4 py-3 rounded-xl form-input-dark text-sm font-mono text-cyan-300">
+                </div>
+                <p class="text-[11px] text-slate-400 mt-2">
+                    <i class="fas fa-info-circle text-cyan-400 mr-1"></i> Telegramda <a href="https://t.me/BotFather" target="_blank" class="text-cyan-400 hover:underline">@BotFather</a> orqali olingan bot tokeni. Ushbu token orqali barcha baholar, ogohlantirishlar va xabarlar avtomatik yuboriladi.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Bot Username</label>
+                    <input type="text" name="telegram_bot_name" value="{{ settings.get('telegram_bot_name', '@kino05_promaks_bot') }}" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm font-mono text-cyan-300">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Bot Havolasi (URL)</label>
+                    <input type="text" name="telegram_bot_url" value="{{ settings.get('telegram_bot_url', 'https://t.me/kino05_promaks_bot') }}" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm font-mono text-cyan-300">
+                </div>
+            </div>
+
+            <!-- Admin Telegram Chat ID (To receive all notifications) -->
+            <div class="p-4 rounded-2xl bg-cyan-950/30 border border-cyan-500/30 space-y-3">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <label class="block text-xs font-bold text-cyan-300 uppercase">Admin Telegram Chat ID</label>
+                        <p class="text-[11px] text-slate-400">Barcha yangi vazifalar, baholar va chetlashtirishlar to'g'ridan-to'g'ri adminning Telegramiga ham yetkaziladi</p>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold {% if settings.get('admin_telegram_chat_id') %}bg-emerald-500/20 text-emerald-300 border border-emerald-500/30{% else %}bg-amber-500/20 text-amber-300 border border-amber-500/30{% endif %}">
+                        {{ 'Ulangan' if settings.get('admin_telegram_chat_id') else 'Ulanmagan' }}
+                    </span>
+                </div>
+                <div class="flex flex-col sm:flex-row items-center gap-3">
+                    <input type="text" name="admin_telegram_chat_id" value="{{ settings.get('admin_telegram_chat_id', '') }}" placeholder="Masalan: 123456789 (Botga /start bossangiz avtomatik aniqlanadi)" class="w-full sm:flex-1 px-4 py-2.5 rounded-xl form-input-dark text-sm font-mono text-cyan-300">
+                    <a href="https://t.me/kino05_promaks_bot" target="_blank" class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-blue-600/30 hover:bg-blue-600/50 text-cyan-300 text-xs font-bold transition-all border border-blue-500/40 shrink-0 text-center">
+                        <i class="fab fa-telegram mr-1"></i> Botda /start bosish
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. AUTOMATIC WARNING & DROP CRITERIA -->
+    <div class="glass-panel p-6 sm:p-8 rounded-3xl border border-amber-500/30 shadow-2xl">
+        <div class="flex items-center space-x-3 pb-6 border-b border-slate-800">
+            <div class="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-2xl">
+                <i class="fas fa-chart-line-down"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold text-white">Baho Pasayishini Aniqlash Me'yorlari (Avtomatik Tahlil)</h3>
+                <p class="text-xs text-slate-400">Qaysi holatlarda o'quvchiga va ota-onasiga avtomatik ogohlantirish yuborilsin?</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-6">
+            <!-- Chegara ball -->
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-2">Minimal O'rtacha Chegara (Ball)</label>
+                <input type="number" name="warning_threshold" min="0" max="100" value="{{ settings.get('warning_threshold', '70') }}" required class="w-full px-4 py-3 rounded-xl form-input-dark text-sm font-bold text-red-400">
+                <span class="text-[11px] text-slate-400 mt-1 block">O'rtacha baho shu sondan pastga tushsa ogohlantiriladi (Standart: 70 ball).</span>
+            </div>
+
+            <!-- Ketma-ket pasayishlar soni -->
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-2">Ketma-ket Pasayishlar Soni</label>
+                <input type="number" name="warning_consecutive_drops" min="2" max="10" value="{{ settings.get('warning_consecutive_drops', '3') }}" required class="w-full px-4 py-3 rounded-xl form-input-dark text-sm font-bold text-amber-400">
+                <span class="text-[11px] text-slate-400 mt-1 block">Baholar ketma-ket shuncha marta tushsa ogohlantiriladi (Standart: 3 marta).</span>
+            </div>
+
+            <!-- Pasayish foizi -->
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-2">Keskin Pasayish Foizi (%)</label>
+                <input type="number" name="warning_drop_percent" min="5" max="50" value="{{ settings.get('warning_drop_percent', '10') }}" required class="w-full px-4 py-3 rounded-xl form-input-dark text-sm font-bold text-purple-400">
+                <span class="text-[11px] text-slate-400 mt-1 block">Oldingi natijaga nisbatan pasayish foizi chegarasi (Standart: 10%).</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. NOTIFICATION TOGGLES -->
+    <div class="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-2xl">
+        <div class="flex items-center space-x-3 pb-6 border-b border-slate-800">
+            <div class="w-12 h-12 rounded-2xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-2xl">
+                <i class="fas fa-bell"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold text-white">Bildirishnomalar Sozlamasi (ON / OFF)</h3>
+                <p class="text-xs text-slate-400">Qaysi xabarlar Telegram orqali yuborilishini boshqaring</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6">
+            <!-- Toggle 1 -->
+            <div class="flex items-center justify-between p-4 rounded-2xl bg-slate-950/60 border border-slate-800">
+                <div>
+                    <h4 class="text-sm font-bold text-white">Yangi Baho Xabarnomasi</h4>
+                    <p class="text-xs text-slate-400">O'quvchiga yangi baho qo'yilganda Telegram xabari</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" name="notification_grade_enabled" value="true" class="sr-only peer" {% if settings.get('notification_grade_enabled', 'true').lower() == 'true' %}checked{% endif %}>
+                    <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
+                </label>
+            </div>
+
+            <!-- Toggle 2 -->
+            <div class="flex items-center justify-between p-4 rounded-2xl bg-slate-950/60 border border-slate-800">
+                <div>
+                    <h4 class="text-sm font-bold text-white">Ota-onaga Baho Xabarnomasi</h4>
+                    <p class="text-xs text-slate-400">Farzandining yangi bahosi ota-onaga ham yuboriladi</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" name="notification_parent_grade_enabled" value="true" class="sr-only peer" {% if settings.get('notification_parent_grade_enabled', 'true').lower() == 'true' %}checked{% endif %}>
+                    <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
+                </label>
+            </div>
+
+            <!-- Toggle 3 -->
+            <div class="flex items-center justify-between p-4 rounded-2xl bg-slate-950/60 border border-slate-800">
+                <div>
+                    <h4 class="text-sm font-bold text-white">Baho Pasayishi Ogohlantirishi (O'quvchi)</h4>
+                    <p class="text-xs text-slate-400">Natijasi tushganda o'quvchiga ogohlantirish yuborish</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" name="notification_warning_enabled" value="true" class="sr-only peer" {% if settings.get('notification_warning_enabled', 'true').lower() == 'true' %}checked{% endif %}>
+                    <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                </label>
+            </div>
+
+            <!-- Toggle 4 -->
+            <div class="flex items-center justify-between p-4 rounded-2xl bg-slate-950/60 border border-slate-800">
+                <div>
+                    <h4 class="text-sm font-bold text-white">Ota-onaga Muhim Ogohlantirish</h4>
+                    <p class="text-xs text-slate-400">Natijasi tushganda ota-onaga qat'iy ogohlantirish xabari</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" name="notification_parent_warning_enabled" value="true" class="sr-only peer" {% if settings.get('notification_parent_warning_enabled', 'true').lower() == 'true' %}checked{% endif %}>
+                    <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. CENTER CONTACT & PROFILE SETTINGS -->
+    <div class="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-2xl">
+        <div class="flex items-center space-x-3 pb-6 border-b border-slate-800">
+            <div class="w-12 h-12 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center text-2xl">
+                <i class="fas fa-building"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold text-white">Markaz Ma'lumotlari</h3>
+                <p class="text-xs text-slate-400">Asosiy saytda ko'rsatiladigan telefon, manzil va ijtimoiy havolalar</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6">
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Markaz Nomi</label>
+                <input type="text" name="center_name" value="{{ settings.get('center_name', 'ANTIGRAVITY Ta\'lim Markazi') }}" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Telefon</label>
+                <input type="text" name="center_phone" value="{{ settings.get('center_phone', '+998 71 200 45 45') }}" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Telegram Kanal / Profil</label>
+                <input type="text" name="center_telegram" value="{{ settings.get('center_telegram', '@antigravity_edu') }}" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Instagram Profil</label>
+                <input type="text" name="center_instagram" value="{{ settings.get('center_instagram', '@antigravity.uz') }}" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+            </div>
+
+            <div class="sm:col-span-2">
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Manzil</label>
+                <input type="text" name="center_address" value="{{ settings.get('center_address', 'Toshkent sh., Yunusobod tumani, Amir Temur shoh ko\'chasi, 107A') }}" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+            </div>
+
+            <div class="sm:col-span-2">
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Ish Vaqti</label>
+                <input type="text" name="center_work_hours" value="{{ settings.get('center_work_hours', 'Dushanba - Shanba: 08:00 - 20:00, Yakshanba: 09:00 - 18:00') }}" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+            </div>
+        </div>
+    </div>
+
+    <!-- Submit Button Bar -->
+    <div class="flex justify-end pt-4">
+        <button type="submit" class="px-10 py-4 rounded-2xl bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-500 hover:scale-[1.02] text-white text-sm font-black shadow-xl shadow-cyan-500/25 transition-all">
+            <i class="fas fa-floppy-disk mr-2"></i> Barcha Sozlamalarni Saqlash
+        </button>
+    </div>
+</form>
+{% endblock %}

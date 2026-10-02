@@ -1,0 +1,544 @@
+{% extends "admin/layout.html" %}
+
+{% block page_title %}
+    <span>📊 360° O'quvchi Kompetensiya Radari & Tahlil Markazi</span>
+{% endblock %}
+
+{% block content %}
+<!-- Top Metrics Row -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="glass-panel p-6 rounded-3xl border border-slate-800">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Baholangan O'quvchilar</p>
+                <h3 class="text-3xl font-black text-white mt-1">{{ scored_count }} nafar</h3>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-xl">
+                <i class="fas fa-id-badge"></i>
+            </div>
+        </div>
+        <p class="text-xs text-slate-400 mt-3">360° profili to'ldirilgan</p>
+    </div>
+
+    <div class="glass-panel p-6 rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 to-transparent">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">O'rtacha Akademiya Balli</p>
+                <h3 class="text-3xl font-black text-emerald-400 mt-1">{{ avg_overall|round(1) }} / 100</h3>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl">
+                <i class="fas fa-chart-line"></i>
+            </div>
+        </div>
+        <p class="text-xs text-emerald-300/80 mt-3">5 yo'nalish bo'yicha indeks</p>
+    </div>
+
+    <div class="glass-panel p-6 rounded-3xl border border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-transparent">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-purple-400 uppercase tracking-wider">Yetakchi Ko'nikma</p>
+                <h3 class="text-2xl font-black text-purple-400 mt-1">{{ top_skill_name }}</h3>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-400 flex items-center justify-center text-xl">
+                <i class="fas fa-award"></i>
+            </div>
+        </div>
+        <p class="text-xs text-slate-400 mt-3">Talabalar orasida eng yuqori</p>
+    </div>
+
+    <div class="glass-panel p-6 rounded-3xl border border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-amber-400 uppercase tracking-wider">E'tibor Talab Ko'nikma</p>
+                <h3 class="text-2xl font-black text-amber-400 mt-1">{{ weak_skill_name }}</h3>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-xl">
+                <i class="fas fa-lightbulb"></i>
+            </div>
+        </div>
+        <p class="text-xs text-slate-400 mt-3">Rivojlantirish tavsiya etiladi</p>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <!-- Left Column: Student Selector & Search (4 Cols) -->
+    <div class="lg:col-span-4 space-y-6">
+        <div class="glass-panel p-6 rounded-3xl border border-slate-800">
+            <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <i class="fas fa-users text-cyan-400"></i> O'quvchini Tanlang
+            </h3>
+            
+            <!-- Filter & Search -->
+            <div class="mb-4 space-y-3">
+                <input type="text" id="studentSearchInput" onkeyup="filterStudents()" placeholder="Ism yoki telefon bo'yicha qidiring..." 
+                    class="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500">
+                <select id="groupFilter" onchange="filterStudents()" class="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl px-4 py-2.5 text-sm text-slate-300 focus:outline-none focus:border-cyan-500">
+                    <option value="">Barcha guruhlar</option>
+                    {% for g in groups %}
+                        <option value="{{ g.name }}">{{ g.name }} ({{ g.course_name }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Student List -->
+            <div class="space-y-2 max-h-[580px] overflow-y-auto pr-1" id="studentListContainer">
+                {% for st in students %}
+                <a href="{{ url_for('admin_competency_matrix', student_id=st.id) }}" 
+                    data-name="{{ st.full_name|lower }}" 
+                    data-group="{{ st.group_name or '' }}"
+                    class="student-item block p-3.5 rounded-2xl border transition-all {% if selected_student and selected_student.id == st.id %}border-cyan-500/60 bg-cyan-500/10 shadow-lg shadow-cyan-500/5{% else %}border-slate-800/80 hover:border-slate-700 hover:bg-slate-800/40 bg-slate-900/40{% endif %}">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-600/30 to-blue-600/30 border border-cyan-500/30 flex items-center justify-center font-bold text-cyan-400 text-sm">
+                                {{ st.full_name[:1] }}
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-white">{{ st.full_name }}</h4>
+                                <p class="text-xs text-slate-400">{{ st.group_name or 'Guruhsiz' }}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            {% if st.overall_score is not none %}
+                                <span class="px-2.5 py-1 rounded-xl text-xs font-black {% if st.overall_score >= 80 %}bg-emerald-500/20 text-emerald-400 border border-emerald-500/30{% elif st.overall_score >= 60 %}bg-cyan-500/20 text-cyan-400 border border-cyan-500/30{% else %}bg-amber-500/20 text-amber-400 border border-amber-500/30{% endif %}">
+                                    {{ st.overall_score|round(0)|int }} ball
+                                </span>
+                            {% else %}
+                                <span class="text-[10px] px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700">Yangi</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: 360° Radar & Assessment Form (8 Cols) -->
+    <div class="lg:col-span-8 space-y-6">
+        {% if selected_student %}
+        <div class="glass-panel p-6 lg:p-8 rounded-3xl border border-slate-800">
+            <!-- Student Header Banner -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 rounded-2xl bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 flex items-center justify-center text-2xl font-black shadow-lg shadow-cyan-500/10">
+                        {{ selected_student.full_name[:1] }}
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-2xl font-black text-white">{{ selected_student.full_name }}</h2>
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+                                ID: #{{ selected_student.id }}
+                            </span>
+                        </div>
+                        <p class="text-sm text-slate-400 mt-1">
+                            <span class="text-slate-300 font-semibold">{{ selected_student.group_name or 'Guruh belgilanmagan' }}</span> &bull; Tel: {{ selected_student.phone or 'Mavjud emas' }}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button onclick="window.print()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 transition-all flex items-center gap-2">
+                        <i class="fas fa-print"></i> Chop Etish
+                    </button>
+                    <button onclick="openParentReportModal()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-2">
+                        <i class="fas fa-file-invoice"></i> Ota-ona Kartasi
+                    </button>
+                </div>
+            </div>
+
+            <!-- Radar Visual + Summary Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-8 my-8 items-center">
+                <!-- Radar Chart Container -->
+                <div class="md:col-span-7 flex flex-col items-center justify-center p-4 rounded-2xl bg-slate-950/60 border border-slate-800/80">
+                    <div class="w-full max-w-[360px] aspect-square relative">
+                        <canvas id="competencyRadarChart"></canvas>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-2 text-center">360 darajali 5 o'qli ko'nikmalar spektri</p>
+                </div>
+
+                <!-- Competency Breakdown Card -->
+                <div class="md:col-span-5 space-y-4">
+                    <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800">
+                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Umumiy Kompetensiya Indeksi</span>
+                        <div class="flex items-baseline gap-2 mt-1">
+                            <span class="text-4xl font-black text-cyan-400" id="liveOverallScore">{{ current_score.overall|round(1) if current_score else 0 }}</span>
+                            <span class="text-slate-500 text-lg font-bold">/ 100</span>
+                        </div>
+                        <div class="w-full bg-slate-800 h-2.5 rounded-full mt-3 overflow-hidden">
+                            <div id="liveOverallBar" class="bg-gradient-to-r from-cyan-500 to-emerald-400 h-full rounded-full transition-all duration-300" 
+                                style="width: {{ current_score.overall if current_score else 0 }}%;"></div>
+                        </div>
+                    </div>
+
+                    <div class="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 text-xs space-y-2.5">
+                        <div class="flex justify-between items-center text-slate-300">
+                            <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> 1. Nazariy bilimlar</span>
+                            <span class="font-bold text-white" id="valTheory">{{ current_score.theory_score if current_score else 75 }}%</span>
+                        </div>
+                        <div class="flex justify-between items-center text-slate-300">
+                            <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> 2. Amaliy dasturlash</span>
+                            <span class="font-bold text-white" id="valPractice">{{ current_score.practice_score if current_score else 80 }}%</span>
+                        </div>
+                        <div class="flex justify-between items-center text-slate-300">
+                            <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> 3. Tartib & Intizom</span>
+                            <span class="font-bold text-white" id="valDiscipline">{{ current_score.discipline_score if current_score else 90 }}%</span>
+                        </div>
+                        <div class="flex justify-between items-center text-slate-300">
+                            <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> 4. Topshiriq tezligi</span>
+                            <span class="font-bold text-white" id="valSpeed">{{ current_score.speed_score if current_score else 70 }}%</span>
+                        </div>
+                        <div class="flex justify-between items-center text-slate-300">
+                            <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> 5. Jamoada ishlash</span>
+                            <span class="font-bold text-white" id="valTeamwork">{{ current_score.teamwork_score if current_score else 85 }}%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assessment Sliders Form -->
+            <form action="{{ url_for('admin_save_competency') }}" method="POST" class="mt-6 pt-6 border-t border-slate-800 space-y-6">
+                <input type="hidden" name="student_id" value="{{ selected_student.id }}">
+                
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fas fa-sliders text-cyan-400"></i> Baholash Ko'rsatkichlarini Yangilash (0-100)
+                </h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Theory Slider -->
+                    <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-800/90">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-xs font-bold text-slate-300">1. Nazariy Bilimlar (Algoritmlar, Sintaksis)</label>
+                            <span class="text-xs font-black text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded" id="labelTheory">{{ current_score.theory_score if current_score else 75 }}</span>
+                        </div>
+                        <input type="range" min="0" max="100" name="theory_score" id="inputTheory" 
+                            value="{{ current_score.theory_score if current_score else 75 }}" 
+                            oninput="updateSliderAndRadar()" class="w-full accent-blue-500 cursor-pointer">
+                    </div>
+
+                    <!-- Practice Slider -->
+                    <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-800/90">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-xs font-bold text-slate-300">2. Amaliy Dasturlash (Kod yozish, Loyihalar)</label>
+                            <span class="text-xs font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded" id="labelPractice">{{ current_score.practice_score if current_score else 80 }}</span>
+                        </div>
+                        <input type="range" min="0" max="100" name="practice_score" id="inputPractice" 
+                            value="{{ current_score.practice_score if current_score else 80 }}" 
+                            oninput="updateSliderAndRadar()" class="w-full accent-emerald-500 cursor-pointer">
+                    </div>
+
+                    <!-- Discipline Slider -->
+                    <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-800/90">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-xs font-bold text-slate-300">3. Tartib & Intizom (Davomat, Uyga vazifa)</label>
+                            <span class="text-xs font-black text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded" id="labelDiscipline">{{ current_score.discipline_score if current_score else 90 }}</span>
+                        </div>
+                        <input type="range" min="0" max="100" name="discipline_score" id="inputDiscipline" 
+                            value="{{ current_score.discipline_score if current_score else 90 }}" 
+                            oninput="updateSliderAndRadar()" class="w-full accent-purple-500 cursor-pointer">
+                    </div>
+
+                    <!-- Speed Slider -->
+                    <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-800/90">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-xs font-bold text-slate-300">4. Topshiriq Tezligi (Deadline, Muammo yechish)</label>
+                            <span class="text-xs font-black text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded" id="labelSpeed">{{ current_score.speed_score if current_score else 70 }}</span>
+                        </div>
+                        <input type="range" min="0" max="100" name="speed_score" id="inputSpeed" 
+                            value="{{ current_score.speed_score if current_score else 70 }}" 
+                            oninput="updateSliderAndRadar()" class="w-full accent-amber-500 cursor-pointer">
+                    </div>
+
+                    <!-- Teamwork Slider (Span 2) -->
+                    <div class="md:col-span-2 bg-slate-900/60 p-4 rounded-2xl border border-slate-800/90">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-xs font-bold text-slate-300">5. Jamoada Ishlash & Kommunikatsiya</label>
+                            <span class="text-xs font-black text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded" id="labelTeamwork">{{ current_score.teamwork_score if current_score else 85 }}</span>
+                        </div>
+                        <input type="range" min="0" max="100" name="teamwork_score" id="inputTeamwork" 
+                            value="{{ current_score.teamwork_score if current_score else 85 }}" 
+                            oninput="updateSliderAndRadar()" class="w-full accent-rose-500 cursor-pointer">
+                    </div>
+                </div>
+
+                <!-- Teacher Recommendations Note -->
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-slate-300">Ustoz / Murabbiy Xulosasi & Tavsiyalari:</label>
+                    <textarea name="teacher_notes" rows="3" placeholder="Masalan: Nazariy bilimlari mustahkam, amaliy loyihalar ustida ko'proq ishlashi tavsiya etiladi..." 
+                        class="w-full bg-slate-900/90 border border-slate-700/80 rounded-2xl p-4 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500">{{ current_score.teacher_notes if current_score else '' }}</textarea>
+                </div>
+
+                <div class="flex items-center justify-between pt-2">
+                    <span class="text-xs text-slate-500">Oxirgi yangilanish: {{ current_score.updated_at if current_score else 'Hali baholanmagan' }}</span>
+                    <button type="submit" class="px-6 py-3 rounded-2xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-sm shadow-lg shadow-cyan-500/25 transition-all flex items-center gap-2">
+                        <i class="fas fa-floppy-disk"></i> Kompetensiya Kartasini Saqlash
+                    </button>
+                </div>
+            </form>
+        </div>
+        {% else %}
+        <div class="glass-panel p-16 rounded-3xl border border-slate-800 text-center flex flex-col items-center justify-center">
+            <div class="w-20 h-20 rounded-3xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-3xl mb-4">
+                <i class="fas fa-radar"></i>
+            </div>
+            <h3 class="text-xl font-bold text-white">O'quvchini Tanlang</h3>
+            <p class="text-sm text-slate-400 max-w-md mt-2">Chap tarafdagi ro'yxatdan o'quvchini tanlang yoki qidiruvdan foydalanib uning 360 darajali ko'nikmalar radarini oching.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Parent Printable Growth Card Modal -->
+{% if selected_student %}
+<div id="parentReportModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 max-w-2xl w-full rounded-3xl p-8 shadow-2xl relative overflow-hidden" id="printableCard">
+        <!-- Close Button -->
+        <button onclick="closeParentReportModal()" class="absolute top-6 right-6 text-slate-400 hover:text-white text-lg">
+            <i class="fas fa-xmark"></i>
+        </button>
+
+        <!-- Official Header -->
+        <div class="text-center pb-6 border-b border-slate-800">
+            <div class="inline-flex items-center gap-2 text-cyan-400 text-sm font-black uppercase tracking-widest mb-1">
+                <i class="fas fa-graduation-cap"></i> CodeCraft IT Academy
+            </div>
+            <h2 class="text-2xl font-black text-white">O'quvchi Kompetensiya & Rivojlanish Hisoboti</h2>
+            <p class="text-xs text-slate-400 mt-1">Ota-onalar va homiylar uchun rasmiy o'quv tahlilnomasi</p>
+        </div>
+
+        <!-- Student Info Row -->
+        <div class="grid grid-cols-2 gap-4 py-4 border-b border-slate-800 text-xs">
+            <div>
+                <span class="text-slate-500 block">O'quvchi F.I.Sh:</span>
+                <strong class="text-white text-sm">{{ selected_student.full_name }}</strong>
+            </div>
+            <div>
+                <span class="text-slate-500 block">Guruh & Yo'nalish:</span>
+                <strong class="text-cyan-400 text-sm">{{ selected_student.group_name or 'Umumiy oqim' }}</strong>
+            </div>
+            <div>
+                <span class="text-slate-500 block">Hisobot Sanasi:</span>
+                <strong class="text-slate-300">{{ now_date or 'Bugun' }}</strong>
+            </div>
+            <div>
+                <span class="text-slate-500 block">Umumiy Kompetensiya Indeksi:</span>
+                <strong class="text-emerald-400 text-sm" id="modalOverallScore">{{ current_score.overall|round(1) if current_score else 0 }} / 100 ball</strong>
+            </div>
+        </div>
+
+        <!-- 5 Axis Breakdown Bars -->
+        <div class="py-4 space-y-3">
+            <div>
+                <div class="flex justify-between text-xs font-semibold mb-1">
+                    <span class="text-slate-300">1. Nazariy bilimlar va tafakkur</span>
+                    <span class="text-blue-400" id="mTheory">{{ current_score.theory_score if current_score else 75 }}%</span>
+                </div>
+                <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                    <div class="bg-blue-500 h-full rounded-full" id="barMTheory" style="width: {{ current_score.theory_score if current_score else 75 }}%;"></div>
+                </div>
+            </div>
+
+            <div>
+                <div class="flex justify-between text-xs font-semibold mb-1">
+                    <span class="text-slate-300">2. Amaliy dasturlash va kod yozish</span>
+                    <span class="text-emerald-400" id="mPractice">{{ current_score.practice_score if current_score else 80 }}%</span>
+                </div>
+                <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                    <div class="bg-emerald-500 h-full rounded-full" id="barMPractice" style="width: {{ current_score.practice_score if current_score else 80 }}%;"></div>
+                </div>
+            </div>
+
+            <div>
+                <div class="flex justify-between text-xs font-semibold mb-1">
+                    <span class="text-slate-300">3. Tartib, intizom va davomat</span>
+                    <span class="text-purple-400" id="mDiscipline">{{ current_score.discipline_score if current_score else 90 }}%</span>
+                </div>
+                <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                    <div class="bg-purple-500 h-full rounded-full" id="barMDiscipline" style="width: {{ current_score.discipline_score if current_score else 90 }}%;"></div>
+                </div>
+            </div>
+
+            <div>
+                <div class="flex justify-between text-xs font-semibold mb-1">
+                    <span class="text-slate-300">4. Topshiriqlarni o'z vaqtida bajarish</span>
+                    <span class="text-amber-400" id="mSpeed">{{ current_score.speed_score if current_score else 70 }}%</span>
+                </div>
+                <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                    <div class="bg-amber-500 h-full rounded-full" id="barMSpeed" style="width: {{ current_score.speed_score if current_score else 70 }}%;"></div>
+                </div>
+            </div>
+
+            <div>
+                <div class="flex justify-between text-xs font-semibold mb-1">
+                    <span class="text-slate-300">5. Jamoada muloqot va soft-skills</span>
+                    <span class="text-rose-400" id="mTeamwork">{{ current_score.teamwork_score if current_score else 85 }}%</span>
+                </div>
+                <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                    <div class="bg-rose-500 h-full rounded-full" id="barMTeamwork" style="width: {{ current_score.teamwork_score if current_score else 85 }}%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Teacher Note Box -->
+        <div class="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 my-2">
+            <span class="text-[11px] font-bold text-cyan-400 uppercase tracking-wider block mb-1">Ustoz Xulosasi:</span>
+            <p class="text-xs text-slate-300 italic" id="modalTeacherNote">
+                "{{ current_score.teacher_notes if current_score and current_score.teacher_notes else "O'quvchi o'z ustida muntazam ishlaydi, darslarda faol va natijalari yuqori." }}"
+            </p>
+        </div>
+
+        <!-- Stamp & Sign Footer -->
+        <div class="pt-4 mt-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+            <div>
+                <span>Bosh murabbiy: <strong>Akademiya Ilmiy Kengashi</strong></span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="window.print()" class="px-4 py-2 rounded-xl bg-cyan-500 text-slate-950 font-bold hover:bg-cyan-400">
+                    <i class="fas fa-print"></i> PDF / Chop etish
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Chart.js and Matrix Logic -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    let radarChart = null;
+
+    function filterStudents() {
+        const query = document.getElementById('studentSearchInput').value.toLowerCase();
+        const group = document.getElementById('groupFilter').value;
+        const items = document.querySelectorAll('.student-item');
+
+        items.forEach(el => {
+            const name = el.getAttribute('data-name');
+            const grp = el.getAttribute('data-group');
+            const matchQuery = name.includes(query);
+            const matchGroup = !group || grp === group;
+
+            if (matchQuery && matchGroup) {
+                el.style.display = 'block';
+            } else {
+                el.style.display = 'none';
+            }
+        });
+    }
+
+    {% if selected_student %}
+    document.addEventListener('DOMContentLoaded', () => {
+        initRadar();
+    });
+
+    function initRadar() {
+        const ctx = document.getElementById('competencyRadarChart');
+        if (!ctx) return;
+
+        const th = parseInt(document.getElementById('inputTheory').value) || 0;
+        const pr = parseInt(document.getElementById('inputPractice').value) || 0;
+        const ds = parseInt(document.getElementById('inputDiscipline').value) || 0;
+        const sp = parseInt(document.getElementById('inputSpeed').value) || 0;
+        const tm = parseInt(document.getElementById('inputTeamwork').value) || 0;
+
+        radarChart = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['Nazariya', 'Amaliyot', 'Intizom', 'Tezlik', 'Jamoa'],
+                datasets: [{
+                    label: 'O\'quvchi Ko\'rsatkichi',
+                    data: [th, pr, ds, sp, tm],
+                    fill: true,
+                    backgroundColor: 'rgba(6, 182, 212, 0.25)',
+                    borderColor: 'rgba(6, 182, 212, 1)',
+                    pointBackgroundColor: '#38bdf8',
+                    pointBorderColor: '#ffffff',
+                    pointHoverBackgroundColor: '#ffffff',
+                    pointHoverBorderColor: '#06b6d4',
+                    borderWidth: 2,
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                    r: {
+                        angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                        pointLabels: {
+                            color: '#94a3b8',
+                            font: { size: 12, weight: 'bold' }
+                        },
+                        ticks: {
+                            backdropColor: 'transparent',
+                            color: '#64748b',
+                            stepSize: 20,
+                            min: 0,
+                            max: 100
+                        },
+                        suggestedMin: 0,
+                        suggestedMax: 100
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    function updateSliderAndRadar() {
+        const th = parseInt(document.getElementById('inputTheory').value) || 0;
+        const pr = parseInt(document.getElementById('inputPractice').value) || 0;
+        const ds = parseInt(document.getElementById('inputDiscipline').value) || 0;
+        const sp = parseInt(document.getElementById('inputSpeed').value) || 0;
+        const tm = parseInt(document.getElementById('inputTeamwork').value) || 0;
+
+        document.getElementById('labelTheory').innerText = th;
+        document.getElementById('labelPractice').innerText = pr;
+        document.getElementById('labelDiscipline').innerText = ds;
+        document.getElementById('labelSpeed').innerText = sp;
+        document.getElementById('labelTeamwork').innerText = tm;
+
+        document.getElementById('valTheory').innerText = th + '%';
+        document.getElementById('valPractice').innerText = pr + '%';
+        document.getElementById('valDiscipline').innerText = ds + '%';
+        document.getElementById('valSpeed').innerText = sp + '%';
+        document.getElementById('valTeamwork').innerText = tm + '%';
+
+        const overall = ((th + pr + ds + sp + tm) / 5).toFixed(1);
+        document.getElementById('liveOverallScore').innerText = overall;
+        document.getElementById('liveOverallBar').style.width = overall + '%';
+
+        if (radarChart) {
+            radarChart.data.datasets[0].data = [th, pr, ds, sp, tm];
+            radarChart.update();
+        }
+
+        // Also update modal if rendered
+        const mTh = document.getElementById('mTheory');
+        if (mTh) {
+            mTh.innerText = th + '%';
+            document.getElementById('barMTheory').style.width = th + '%';
+            document.getElementById('mPractice').innerText = pr + '%';
+            document.getElementById('barMPractice').style.width = pr + '%';
+            document.getElementById('mDiscipline').innerText = ds + '%';
+            document.getElementById('barMDiscipline').style.width = ds + '%';
+            document.getElementById('mSpeed').innerText = sp + '%';
+            document.getElementById('barMSpeed').style.width = sp + '%';
+            document.getElementById('mTeamwork').innerText = tm + '%';
+            document.getElementById('barMTeamwork').style.width = tm + '%';
+            document.getElementById('modalOverallScore').innerText = overall + ' / 100 ball';
+        }
+    }
+
+    function openParentReportModal() {
+        document.getElementById('parentReportModal').classList.remove('hidden');
+    }
+
+    function closeParentReportModal() {
+        document.getElementById('parentReportModal').classList.add('hidden');
+    }
+    {% endif %}
+</script>
+{% endblock %}

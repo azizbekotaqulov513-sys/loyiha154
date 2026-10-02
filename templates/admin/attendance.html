@@ -1,0 +1,125 @@
+{% extends "admin/layout.html" %}
+
+{% block page_title %}
+    <i class="fas fa-calendar-check text-emerald-400 mr-2"></i> Davomat Boshqaruvi
+{% endblock %}
+
+{% block content %}
+<!-- Group & Date Selector -->
+<div class="glass-panel p-6 rounded-3xl border border-slate-800 mb-8">
+    <form method="GET" action="{{ url_for('admin_attendance') }}" class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+        <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">Guruhni tanlang *</label>
+            <select name="group_id" required class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm bg-slate-900" onchange="this.form.submit()">
+                <option value="">Guruhni tanlang</option>
+                {% for g in groups %}
+                    <option value="{{ g.id }}" {% if selected_group == g.id|string %}selected{% endif %}>{{ g.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">Sana *</label>
+            <input type="date" name="date" value="{{ selected_date }}" required class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm" onchange="this.form.submit()">
+        </div>
+
+        <div>
+            <button type="submit" class="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold transition-all">
+                Davomat varaqasini yuklash
+            </button>
+        </div>
+    </form>
+</div>
+
+{% if selected_group %}
+    {% if students %}
+    <form method="POST" action="{{ url_for('attendance_save') }}">
+        <input type="hidden" name="group_id" value="{{ selected_group }}">
+        <input type="hidden" name="date" value="{{ selected_date }}">
+
+        <div class="glass-panel rounded-3xl border border-slate-800 overflow-hidden shadow-2xl mb-6">
+            <div class="p-6 border-b border-slate-800 flex items-center justify-between">
+                <div>
+                    <h3 class="text-base font-bold text-white">Guruh O'quvchilari Davomati</h3>
+                    <span class="text-xs text-slate-400">Sana: <strong class="text-cyan-400 font-mono">{{ selected_date }}</strong></span>
+                </div>
+                <button type="submit" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-black shadow-lg shadow-emerald-500/20 transition-all">
+                    <i class="fas fa-floppy-disk mr-1.5"></i> Davomatni saqlash
+                </button>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-slate-300">
+                    <thead class="text-xs uppercase bg-slate-900/90 text-slate-400 border-b border-slate-800">
+                        <tr>
+                            <th class="px-6 py-4">№</th>
+                            <th class="px-6 py-4">O‘quvchi</th>
+                            <th class="px-6 py-4 text-center">Davomat Holati</th>
+                            <th class="px-6 py-4">Izoh</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/70">
+                        {% for s in students %}
+                        {% set current_status = attendance_map.get(s.id, {}).get('status', 'present') %}
+                        {% set current_note = attendance_map.get(s.id, {}).get('note', '') %}
+                        <tr class="hover:bg-slate-800/40 transition-colors">
+                            <td class="px-6 py-4 font-mono text-slate-500 text-xs">{{ loop.index }}</td>
+                            <td class="px-6 py-4">
+                                <a href="{{ url_for('student_detail', id=s.id) }}" class="font-bold text-white hover:text-cyan-400">
+                                    {{ s.first_name }} {{ s.last_name }}
+                                </a>
+                                <div class="text-xs text-slate-500">{{ s.phone }}</div>
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <div class="inline-flex items-center space-x-2">
+                                    <label class="inline-flex items-center space-x-1 cursor-pointer px-3 py-1.5 rounded-xl border border-slate-700 bg-slate-900 has-[:checked]:bg-emerald-500/20 has-[:checked]:border-emerald-500/50 has-[:checked]:text-emerald-300 transition-all">
+                                        <input type="radio" name="status_{{ s.id }}" value="present" {% if current_status == 'present' %}checked{% endif %} class="hidden">
+                                        <span class="text-xs font-bold">Bor</span>
+                                    </label>
+
+                                    <label class="inline-flex items-center space-x-1 cursor-pointer px-3 py-1.5 rounded-xl border border-slate-700 bg-slate-900 has-[:checked]:bg-red-500/20 has-[:checked]:border-red-500/50 has-[:checked]:text-red-300 transition-all">
+                                        <input type="radio" name="status_{{ s.id }}" value="absent" {% if current_status == 'absent' %}checked{% endif %} class="hidden">
+                                        <span class="text-xs font-bold">Yo'q</span>
+                                    </label>
+
+                                    <label class="inline-flex items-center space-x-1 cursor-pointer px-3 py-1.5 rounded-xl border border-slate-700 bg-slate-900 has-[:checked]:bg-amber-500/20 has-[:checked]:border-amber-500/50 has-[:checked]:text-amber-300 transition-all">
+                                        <input type="radio" name="status_{{ s.id }}" value="late" {% if current_status == 'late' %}checked{% endif %} class="hidden">
+                                        <span class="text-xs font-bold">Kechikdi</span>
+                                    </label>
+
+                                    <label class="inline-flex items-center space-x-1 cursor-pointer px-3 py-1.5 rounded-xl border border-slate-700 bg-slate-900 has-[:checked]:bg-blue-500/20 has-[:checked]:border-blue-500/50 has-[:checked]:text-blue-300 transition-all">
+                                        <input type="radio" name="status_{{ s.id }}" value="excused" {% if current_status == 'excused' %}checked{% endif %} class="hidden">
+                                        <span class="text-xs font-bold">Sababli</span>
+                                    </label>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <input type="text" name="note_{{ s.id }}" value="{{ current_note }}" placeholder="Izoh (masalan: 10 daqiqa kechikdi)..." class="w-full px-3 py-1.5 rounded-xl form-input-dark text-xs">
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="p-6 bg-slate-950/60 border-t border-slate-800 flex justify-end">
+                <button type="submit" class="px-8 py-3 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-500 hover:scale-[1.01] text-white text-sm font-black shadow-lg shadow-emerald-500/25 transition-all">
+                    <i class="fas fa-check-double mr-2"></i> Davomatni Tasdiqlash
+                </button>
+            </div>
+        </div>
+    </form>
+    {% else %}
+    <div class="glass-panel p-12 rounded-3xl border border-slate-800 text-center text-slate-400">
+        <i class="fas fa-user-slash text-4xl mb-3 text-slate-600 block"></i>
+        Ushbu guruhda hozirda faol o'quvchilar mavjud emas.
+    </div>
+    {% endif %}
+{% else %}
+<div class="glass-panel p-16 rounded-3xl border border-slate-800 text-center text-slate-400">
+    <i class="fas fa-users text-4xl mb-3 text-cyan-400 block"></i>
+    <h3 class="text-lg font-bold text-white mb-1">Davomatni to'ldirish uchun guruhni tanlang</h3>
+    <p class="text-xs text-slate-400">Yuqoridagi filtrdan kerakli guruh va sanani tanlang.</p>
+</div>
+{% endif %}
+{% endblock %}

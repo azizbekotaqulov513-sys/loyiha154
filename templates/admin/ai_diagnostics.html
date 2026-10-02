@@ -1,0 +1,195 @@
+{% extends "admin/layout.html" %}
+
+{% block page_title %}
+    <span>🧠 AI Diagnostika & O'quvchilar Xavfini Bashorat Qilish</span>
+{% endblock %}
+
+{% block content %}
+<!-- Top Metrics Row -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="glass-panel p-6 rounded-3xl border border-slate-800">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Tahlil Qilingan O'quvchilar</p>
+                <h3 class="text-3xl font-black text-white mt-1">{{ total_analyzed }}</h3>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-xl">
+                <i class="fas fa-brain"></i>
+            </div>
+        </div>
+        <p class="text-xs text-slate-400 mt-3 flex items-center gap-1.5">
+            <i class="fas fa-check-double text-cyan-400"></i>
+            100% o'quvchilar tahlil qilindi
+        </p>
+    </div>
+
+    <div class="glass-panel p-6 rounded-3xl border border-red-500/20 bg-gradient-to-br from-red-500/5 to-transparent">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-red-400 uppercase tracking-wider">🔴 Yuqori Xavf (Pasayish)</p>
+                <h3 class="text-3xl font-black text-red-400 mt-1">{{ high_risk_count }}</h3>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-red-500/10 text-red-400 flex items-center justify-center text-xl">
+                <i class="fas fa-triangle-exclamation"></i>
+            </div>
+        </div>
+        <p class="text-xs text-red-300/80 mt-3">Shoshilinch pedagogik e'tibor zarur</p>
+    </div>
+
+    <div class="glass-panel p-6 rounded-3xl border border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-amber-400 uppercase tracking-wider">🟡 O'rta Xavf (E'tibor)</p>
+                <h3 class="text-3xl font-black text-amber-400 mt-1">{{ medium_risk_count }}</h3>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-xl">
+                <i class="fas fa-chart-line"></i>
+            </div>
+        </div>
+        <p class="text-xs text-amber-300/80 mt-3">Muntazam nazorat tavsiya etiladi</p>
+    </div>
+
+    <div class="glass-panel p-6 rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 to-transparent">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">🟢 Barqaror & A'lochi</p>
+                <h3 class="text-3xl font-black text-emerald-400 mt-1">{{ low_risk_count }}</h3>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl">
+                <i class="fas fa-medal"></i>
+            </div>
+        </div>
+        <p class="text-xs text-emerald-300/80 mt-3">Yuqori o'zlashtirish ko'rsatkichi</p>
+    </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="glass-panel p-5 rounded-2xl border border-slate-800 mb-8 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-2">
+        <span class="text-xs font-bold text-slate-400 uppercase">Xavf darajasi:</span>
+        <a href="{{ url_for('admin_ai_diagnostics', filter='all') }}" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all {% if current_filter == 'all' %}bg-cyan-500 text-slate-950 font-bold{% else %}bg-slate-800 text-slate-300 hover:bg-slate-700{% endif %}">
+            Barchasi ({{ total_analyzed }})
+        </a>
+        <a href="{{ url_for('admin_ai_diagnostics', filter='high') }}" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all {% if current_filter == 'high' %}bg-red-500 text-white font-bold{% else %}bg-slate-800 text-red-400 hover:bg-slate-700{% endif %}">
+            🔴 Yuqori xavf ({{ high_risk_count }})
+        </a>
+        <a href="{{ url_for('admin_ai_diagnostics', filter='medium') }}" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all {% if current_filter == 'medium' %}bg-amber-500 text-slate-950 font-bold{% else %}bg-slate-800 text-amber-400 hover:bg-slate-700{% endif %}">
+            🟡 O'rta xavf ({{ medium_risk_count }})
+        </a>
+        <a href="{{ url_for('admin_ai_diagnostics', filter='low') }}" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all {% if current_filter == 'low' %}bg-emerald-500 text-slate-950 font-bold{% else %}bg-slate-800 text-emerald-400 hover:bg-slate-700{% endif %}">
+            🟢 Barqaror ({{ low_risk_count }})
+        </a>
+    </div>
+
+    <div class="text-xs text-slate-400 flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+        AI modeli: <b>Deep Learning Heuristic Diagnostic Engine v2.0</b>
+    </div>
+</div>
+
+<!-- Diagnostics Cards List -->
+<div class="space-y-4">
+    {% for item in diagnostics %}
+    <div class="glass-panel p-6 rounded-3xl border {% if item.risk_level == 'high' %}border-red-500/30 bg-red-950/10{% elif item.risk_level == 'medium' %}border-amber-500/30 bg-amber-950/10{% else %}border-slate-800{% endif %} transition-all hover:border-cyan-500/50">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <!-- Left: Student Info & Badges -->
+            <div class="flex items-start space-x-4">
+                <div class="w-14 h-14 rounded-2xl {% if item.risk_level == 'high' %}bg-red-500/20 text-red-400 border border-red-500/30{% elif item.risk_level == 'medium' %}bg-amber-500/20 text-amber-400 border border-amber-500/30{% else %}bg-cyan-500/20 text-cyan-400 border border-cyan-500/30{% endif %} flex items-center justify-center text-lg font-black shrink-0">
+                    {{ item.student.first_name[:1] }}{{ item.student.last_name[:1] }}
+                </div>
+                <div>
+                    <div class="flex items-center gap-3">
+                        <h4 class="text-lg font-bold text-white">
+                            <a href="{{ url_for('student_detail', id=item.student.id) }}" class="hover:text-cyan-400 transition-colors">
+                                {{ item.student.first_name }} {{ item.student.last_name }}
+                            </a>
+                        </h4>
+                        {% if item.risk_level == 'high' %}
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-black bg-red-500/20 text-red-400 border border-red-500/30">
+                                🔴 Yuqori xavf
+                            </span>
+                        {% elif item.risk_level == 'medium' %}
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                                🟡 O'rta xavf
+                            </span>
+                        {% else %}
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                🟢 Barqaror / A'lo
+                            </span>
+                        {% endif %}
+                    </div>
+                    <div class="flex flex-wrap items-center gap-4 text-xs text-slate-400 mt-1">
+                        <span><i class="fas fa-book-open text-cyan-400 mr-1"></i>{{ item.student.course_title or 'Kurs belgilanmagan' }}</span>
+                        <span><i class="fas fa-users text-cyan-400 mr-1"></i>{{ item.student.group_name or 'Guruhsiz' }}</span>
+                        <span><i class="fas fa-phone text-cyan-400 mr-1"></i>{{ item.student.phone }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Middle: Academic Stats Metrics -->
+            <div class="grid grid-cols-3 gap-3 text-center bg-slate-900/60 p-3 rounded-2xl border border-slate-800/80 shrink-0">
+                <div class="px-2">
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block">O'rtacha Baho</span>
+                    <span class="text-base font-black {% if item.avg_score >= 80 %}text-emerald-400{% elif item.avg_score >= 70 %}text-amber-400{% else %}text-red-400{% endif %}">
+                        {{ item.avg_score or '—' }}
+                    </span>
+                </div>
+                <div class="px-2 border-x border-slate-800">
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block">Davomat</span>
+                    <span class="text-base font-black {% if item.attendance_rate >= 85 %}text-emerald-400{% else %}text-red-400{% endif %}">
+                        {{ item.attendance_rate }}%
+                    </span>
+                </div>
+                <div class="px-2">
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block">Uy Vazifalari</span>
+                    <span class="text-base font-black text-cyan-400">
+                        {{ item.hw_count }} ta
+                    </span>
+                </div>
+            </div>
+
+            <!-- Right: 1-Click Telegram Action -->
+            <div class="flex items-center gap-2 shrink-0">
+                <form action="{{ url_for('admin_ai_send_telegram', id=item.student.id) }}" method="POST" onsubmit="return confirm('Haqiqatan ham ushbu o\'quvchi va ota-onaga AI tashxis xulosasini Telegramdan yubormoqchimisiz?');">
+                    <button type="submit" class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-lg shadow-blue-500/20 flex items-center gap-2 transition-all">
+                        <i class="fab fa-telegram"></i>
+                        <span>AI Xulosani Yuborish</span>
+                    </button>
+                </form>
+                <a href="{{ url_for('admin_student_id_card', id=item.student.id) }}" title="ID Kartasi" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-400 hover:text-white text-xs border border-slate-700 transition-all">
+                    <i class="fas fa-id-badge"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Bottom AI Analysis Text & Recommendations -->
+        <div class="mt-4 pt-4 border-t border-slate-800/80 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="p-3.5 rounded-2xl bg-slate-900/40 border border-slate-800/60 text-xs">
+                <div class="flex items-center gap-2 font-bold text-slate-300 mb-1.5">
+                    <i class="fas fa-microchip text-cyan-400"></i>
+                    AI Diagnostik Xulosasi
+                </div>
+                <p class="text-slate-300 leading-relaxed">
+                    {{ item.summary }}
+                </p>
+            </div>
+            <div class="p-3.5 rounded-2xl bg-slate-900/40 border border-slate-800/60 text-xs">
+                <div class="flex items-center gap-2 font-bold text-slate-300 mb-1.5">
+                    <i class="fas fa-lightbulb text-amber-400"></i>
+                    Pedagogik Tavsiyalar
+                </div>
+                <p class="text-slate-300 leading-relaxed">
+                    {{ item.recommendations }}
+                </p>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-16 glass-panel rounded-3xl border border-slate-800">
+        <i class="fas fa-user-check text-4xl text-slate-600 mb-3 block"></i>
+        <h4 class="text-lg font-bold text-white">Bu toifada o'quvchilar topilmadi</h4>
+        <p class="text-slate-400 text-sm mt-1">Barcha filtrlarni ko'rish uchun "Barchasi" tugmasini bosing.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

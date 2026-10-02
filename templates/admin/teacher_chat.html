@@ -1,0 +1,271 @@
+{% extends "admin/layout.html" %}
+
+{% block page_title %}
+    <i class="fas fa-comment-dots text-cyan-400 mr-2"></i> O‘quvchilar Savol-Javoblari & Chat
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-140px)] min-h-[600px]">
+
+    <!-- LEFT COLUMN: STUDENTS LIST (4 cols) -->
+    <div class="lg:col-span-4 glass-panel rounded-3xl border border-slate-800 flex flex-col overflow-hidden">
+        <!-- Search & Filter Header -->
+        <div class="p-4 border-b border-slate-800 bg-slate-950/60 space-y-3">
+            <div class="flex items-center justify-between">
+                <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                    <i class="fas fa-users text-cyan-400"></i>
+                    <span>Muloqotlar ({{ students|length }})</span>
+                </h3>
+                <span class="text-[11px] text-slate-400 font-mono">Real-vaqt</span>
+            </div>
+            <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500 text-xs">
+                    <i class="fas fa-search"></i>
+                </span>
+                <input type="text" id="student-search-input" onkeyup="filterStudents()" placeholder="O'quvchi ismini izlash..." class="w-full pl-9 pr-3 py-2 rounded-xl form-input-dark text-xs text-slate-200 placeholder:text-slate-500">
+            </div>
+        </div>
+
+        <!-- Scrollable Student List -->
+        <div id="students-list-container" class="flex-1 overflow-y-auto divide-y divide-slate-800/60">
+            {% for s in students %}
+            <a href="{{ url_for('admin_teacher_chat', student_id=s.id) }}" class="student-list-item block p-4 hover:bg-slate-800/50 transition-all {% if selected_student and selected_student.id == s.id %}bg-cyan-500/10 border-l-4 border-cyan-400{% endif %}" data-name="{{ s.first_name|lower }} {{ s.last_name|lower }}">
+                <div class="flex items-start justify-between">
+                    <div class="flex items-center space-x-3 min-w-0">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500/20 to-blue-600/30 text-cyan-400 flex items-center justify-center font-bold text-xs shrink-0 border border-cyan-500/20">
+                            {{ s.first_name[:1] }}{{ s.last_name[:1] }}
+                        </div>
+                        <div class="min-w-0">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm font-bold text-white truncate">{{ s.first_name }} {{ s.last_name }}</span>
+                            </div>
+                            <span class="text-[11px] text-slate-400 block truncate">{{ s.group_name or s.course_title or 'Guruhsiz' }}</span>
+                            <p class="text-xs text-slate-300 truncate mt-1">
+                                {{ s.last_message or 'Yangi muloqot boshlash' }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="text-right shrink-0 flex flex-col items-end space-y-1">
+                        <span class="text-[10px] text-slate-500 font-mono">
+                            {{ s.last_message_time[11:16] if s.last_message_time else '' }}
+                        </span>
+                        {% if s.unread_count > 0 %}
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-cyan-500 text-slate-950 animate-pulse">
+                                +{{ s.unread_count }}
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </a>
+            {% else %}
+            <div class="p-8 text-center text-slate-500 text-xs">
+                Hozircha xabar yozgan o'quvchilar yo'q.
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- RIGHT COLUMN: ACTIVE CONVERSATION (8 cols) -->
+    <div class="lg:col-span-8 glass-panel rounded-3xl border border-slate-800 flex flex-col overflow-hidden">
+        {% if selected_student %}
+            <!-- Chat Header -->
+            <div class="p-4 sm:p-5 border-b border-slate-800 bg-slate-950/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-base shadow-md shadow-cyan-500/20">
+                        {{ selected_student.first_name[:1] }}{{ selected_student.last_name[:1] }}
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <h3 class="text-base font-bold text-white">{{ selected_student.first_name }} {{ selected_student.last_name }}</h3>
+                            <a href="{{ url_for('student_detail', id=selected_student.id) }}" class="text-xs text-cyan-400 hover:underline flex items-center space-x-1">
+                                <span>#{{ selected_student.id }}</span>
+                                <i class="fas fa-arrow-up-right-from-square text-[10px]"></i>
+                            </a>
+                        </div>
+                        <p class="text-xs text-slate-400">
+                            {{ selected_student.course_title or 'Kurs' }} &bull; {{ selected_student.group_name or 'Guruhsiz' }} &bull; {{ selected_student.phone }}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Bot delivery indicator -->
+                <div class="flex items-center space-x-2">
+                    {% if selected_student.telegram_chat_id %}
+                        <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center space-x-1.5" title="Javob @kino05_promaks_bot orqali o'quvchiga darhol yetkaziladi">
+                            <i class="fab fa-telegram text-emerald-400"></i>
+                            <span>Bot Ulangan ({{ bot_name }})</span>
+                        </span>
+                    {% else %}
+                        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700 flex items-center space-x-1.5" title="O'quvchi botga Chat ID kiritmagan">
+                            <i class="fab fa-telegram text-slate-500"></i>
+                            <span>Bot Ulanmagan</span>
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Messages Thread Box -->
+            <div id="admin-messages-box" class="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 bg-slate-950/30">
+                {% for m in messages %}
+                    {% if m.sender_type == 'teacher' %}
+                        <!-- Outgoing Teacher/Admin Message -->
+                        <div class="flex justify-end">
+                            <div class="max-w-lg bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-2xl rounded-tr-sm p-4 shadow-lg space-y-1">
+                                <div class="text-xs font-bold text-cyan-100 flex justify-between items-center space-x-4">
+                                    <span>Ustoz (Siz)</span>
+                                    <span class="text-[10px] text-cyan-200 font-mono">{{ m.created_at[11:16] if m.created_at|length > 15 else m.created_at }}</span>
+                                </div>
+                                <p class="text-sm leading-relaxed whitespace-pre-wrap">{{ m.message }}</p>
+                            </div>
+                        </div>
+                    {% else %}
+                        <!-- Incoming Student Message -->
+                        <div class="flex justify-start">
+                            <div class="max-w-lg bg-slate-900 border border-slate-800 text-slate-100 rounded-2xl rounded-tl-sm p-4 shadow-lg space-y-1">
+                                <div class="text-xs font-bold text-cyan-400 flex justify-between items-center space-x-4">
+                                    <span>{{ selected_student.first_name }} (O‘quvchi)</span>
+                                    <span class="text-[10px] text-slate-400 font-mono">{{ m.created_at[11:16] if m.created_at|length > 15 else m.created_at }}</span>
+                                </div>
+                                <p class="text-sm leading-relaxed whitespace-pre-wrap text-slate-200">{{ m.message }}</p>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div id="no-dialog-alert" class="h-full flex flex-col items-center justify-center text-center p-6 text-slate-500 space-y-3">
+                        <div class="w-14 h-14 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-cyan-400 text-2xl">
+                            <i class="fas fa-comments"></i>
+                        </div>
+                        <p class="text-sm">Ushbu o‘quvchi bilan hali yozishmalar mavjud emas.<br>Quyidagi shakl orqali birinchi bo‘lib xabar yuborishingiz mumkin.</p>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Message Input & Quick Replies -->
+            <div class="p-4 border-t border-slate-800 bg-slate-950/80 space-y-3">
+                <!-- Quick Reply Chips -->
+                <div class="flex items-center space-x-2 overflow-x-auto text-[11px] pb-1">
+                    <span class="text-slate-500 shrink-0">Tezkor javob:</span>
+                    <button type="button" onclick="insertQuickReply('Salom! Savolingizni ko\'rib chiqdim, juda to\'g\'ri yo\'nalishda ketyapsiz.')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 shrink-0 transition-colors">
+                        To'g'ri ketyapsiz
+                    </button>
+                    <button type="button" onclick="insertQuickReply('Ertaga dars boshlanishida ushbu mavzuni birgalikda to\'liq tahlil qilamiz.')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 shrink-0 transition-colors">
+                        Darsda tahlil qilamiz
+                    </button>
+                    <button type="button" onclick="insertQuickReply('Iltimos, darslikning keyingi mashqlarini ham ishlab qo\'ying.')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 shrink-0 transition-colors">
+                        Keyingi mashqlar
+                    </button>
+                </div>
+
+                <form id="admin-reply-form" onsubmit="sendAdminReply(event)" class="flex items-center space-x-3">
+                    <input type="hidden" id="target-student-id" value="{{ selected_student.id }}">
+                    <input type="text" id="admin-reply-input" placeholder="O'quvchiga javob xabarini yozing..." required autocomplete="off" class="flex-1 px-4 py-3 rounded-2xl form-input-dark text-sm placeholder:text-slate-500 text-white focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+                    <button type="submit" id="admin-reply-btn" class="px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:scale-105 text-white font-bold text-sm shadow-lg shadow-cyan-500/25 transition-all flex items-center space-x-2">
+                        <span>Yuborish</span>
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+        {% else %}
+            <!-- No student selected state -->
+            <div class="h-full flex flex-col items-center justify-center text-center p-8 text-slate-500 space-y-4">
+                <div class="w-16 h-16 rounded-3xl bg-slate-900 border border-slate-800 flex items-center justify-center text-cyan-400 text-3xl">
+                    <i class="fas fa-comment-dots"></i>
+                </div>
+                <div>
+                    <h4 class="text-lg font-bold text-white">Muloqotni Tanlang</h4>
+                    <p class="text-xs text-slate-400 mt-1">Chap paneldagi ro'yxatdan o'quvchini tanlab, yozishmani ko'ring va javob bering.</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function scrollAdminChatBottom() {
+        const box = document.getElementById('admin-messages-box');
+        if (box) box.scrollTop = box.scrollHeight;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        scrollAdminChatBottom();
+    });
+
+    function filterStudents() {
+        const q = document.getElementById('student-search-input').value.toLowerCase();
+        document.querySelectorAll('.student-list-item').forEach(item => {
+            const name = item.getAttribute('data-name');
+            if (name.includes(q)) {
+                item.classList.remove('hidden');
+            } else {
+                item.classList.add('hidden');
+            }
+        });
+    }
+
+    function insertQuickReply(text) {
+        const input = document.getElementById('admin-reply-input');
+        if (input) {
+            input.value = text;
+            input.focus();
+        }
+    }
+
+    async function sendAdminReply(e) {
+        e.preventDefault();
+        const studentId = document.getElementById('target-student-id').value;
+        const input = document.getElementById('admin-reply-input');
+        const text = input.value.trim();
+        if (!text) return;
+
+        const btn = document.getElementById('admin-reply-btn');
+        btn.disabled = true;
+
+        const formData = new FormData();
+        formData.append('student_id', studentId);
+        formData.append('message', text);
+
+        try {
+            const res = await fetch('/api/admin/teacher-chat/send', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success) {
+                input.value = '';
+                const alertEl = document.getElementById('no-dialog-alert');
+                if (alertEl) alertEl.remove();
+
+                const box = document.getElementById('admin-messages-box');
+                const timeStr = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const bubble = document.createElement('div');
+                bubble.className = 'flex justify-end';
+                bubble.innerHTML = `
+                    <div class="max-w-lg bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-2xl rounded-tr-sm p-4 shadow-lg space-y-1">
+                        <div class="text-xs font-bold text-cyan-100 flex justify-between items-center space-x-4">
+                            <span>Ustoz (Siz)</span>
+                            <span class="text-[10px] text-cyan-200 font-mono">${timeStr}</span>
+                        </div>
+                        <p class="text-sm leading-relaxed whitespace-pre-wrap">${escapeHtml(text)}</p>
+                    </div>
+                `;
+                box.appendChild(bubble);
+                scrollAdminChatBottom();
+            } else {
+                alert(data.message || "Xabar yuborilmadi");
+            }
+        } catch(err) {
+            alert("Xatolik: " + err.message);
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    function escapeHtml(str) {
+        return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+</script>
+{% endblock %}

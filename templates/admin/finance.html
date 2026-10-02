@@ -1,0 +1,311 @@
+{% extends "admin/layout.html" %}
+
+{% block page_title %}
+    <span>💳 Moliya & To'lovlar Nazorati</span>
+{% endblock %}
+
+{% block content %}
+<!-- Top Metrics Row -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="glass-panel p-6 rounded-3xl border border-slate-800">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Joriy Oy Tushumi ({{ current_month }})</p>
+                <h3 class="text-2xl lg:text-3xl font-black text-emerald-400 mt-1">{{ "{:,.0f}".format(month_revenue)|replace(",", " ") }} so'm</h3>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl">
+                <i class="fas fa-wallet"></i>
+            </div>
+        </div>
+        <p class="text-xs text-slate-400 mt-3">To'langan to'lovlar: {{ month_payments_count }} ta</p>
+    </div>
+
+    <div class="glass-panel p-6 rounded-3xl border border-red-500/20 bg-gradient-to-br from-red-500/5 to-transparent">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-red-400 uppercase tracking-wider">Qarzdor O'quvchilar</p>
+                <h3 class="text-3xl font-black text-red-400 mt-1">{{ debtors|length }}</h3>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-red-500/10 text-red-400 flex items-center justify-center text-xl">
+                <i class="fas fa-receipt"></i>
+            </div>
+        </div>
+        <p class="text-xs text-red-300/80 mt-3">{{ current_month }} oyi uchun to'lov qilinmagan</p>
+    </div>
+
+    <div class="glass-panel p-6 rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/5 to-transparent">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-cyan-400 uppercase tracking-wider">Jami Qarzdorlik Summasi</p>
+                <h3 class="text-2xl font-black text-cyan-400 mt-1">{{ "{:,.0f}".format(total_debt_amount)|replace(",", " ") }} so'm</h3>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-xl">
+                <i class="fas fa-hand-holding-dollar"></i>
+            </div>
+        </div>
+        <p class="text-xs text-slate-400 mt-3">Yig'ilishi kutilayotgan mablag'</p>
+    </div>
+
+    <div class="glass-panel p-6 rounded-3xl border border-slate-800">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Umumiy Tarixiy Tushum</p>
+                <h3 class="text-2xl font-black text-white mt-1">{{ "{:,.0f}".format(all_time_revenue)|replace(",", " ") }} so'm</h3>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-xl">
+                <i class="fas fa-vault"></i>
+            </div>
+        </div>
+        <p class="text-xs text-slate-400 mt-3">Barcha davrlardagi to'lovlar</p>
+    </div>
+</div>
+
+<!-- Actions & Tabs -->
+<div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+    <div class="flex items-center space-x-3">
+        <button onclick="switchTab('debtors-tab')" id="tab-btn-debtors" class="px-5 py-2.5 rounded-xl font-bold text-sm transition-all bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20">
+            <i class="fas fa-triangle-exclamation mr-2"></i>
+            Qarzdorlar Ro'yxati ({{ debtors|length }})
+        </button>
+        <button onclick="switchTab('history-tab')" id="tab-btn-history" class="px-5 py-2.5 rounded-xl font-bold text-sm transition-all bg-slate-800 text-slate-300 hover:bg-slate-700">
+            <i class="fas fa-list mr-2"></i>
+            To'lovlar Tarixi ({{ payments|length }})
+        </button>
+    </div>
+
+    <div class="flex items-center gap-3">
+        <button onclick="openModal('new-payment-modal')" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-sm shadow-lg shadow-emerald-500/25 flex items-center gap-2 transition-all">
+            <i class="fas fa-plus-circle"></i>
+            <span>Yangi To'lov Qabul Qilish</span>
+        </button>
+    </div>
+</div>
+
+<!-- SECTION 1: DEBTORS TAB -->
+<div id="debtors-view" class="space-y-4">
+    <div class="glass-panel p-6 rounded-3xl border border-slate-800">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                <i class="fas fa-bell text-red-400"></i>
+                {{ current_month }} oyi uchun to'lov qilmagan o'quvchilar
+            </h3>
+            <span class="text-xs text-slate-400">
+                1-bosishda o'quvchi va ota-onaga Telegram orqali to'lov eslatmasi yuboring
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-slate-300">
+                <thead class="text-xs uppercase bg-slate-900/80 text-slate-400 border-b border-slate-800">
+                    <tr>
+                        <th class="py-3 px-4">O'quvchi</th>
+                        <th class="py-3 px-4">Kurs / Guruh</th>
+                        <th class="py-3 px-4">Oylik To'lov</th>
+                        <th class="py-3 px-4">Telefon</th>
+                        <th class="py-3 px-4">Ota-ona</th>
+                        <th class="py-3 px-4 text-center">Amal</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/60">
+                    {% for d in debtors %}
+                    <tr class="hover:bg-slate-800/30 transition-colors">
+                        <td class="py-3.5 px-4">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-9 h-9 rounded-xl bg-red-500/10 text-red-400 flex items-center justify-center font-bold text-xs">
+                                    {{ d.first_name[:1] }}{{ d.last_name[:1] }}
+                                </div>
+                                <div>
+                                    <a href="{{ url_for('student_detail', id=d.id) }}" class="font-bold text-white hover:text-cyan-400">
+                                        {{ d.first_name }} {{ d.last_name }}
+                                    </a>
+                                    <span class="block text-[11px] text-slate-500 font-mono">ID: #{{ "%05d" % d.id }}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <div class="font-semibold text-slate-200">{{ d.course_title or 'Kurs biriktirilmagan' }}</div>
+                            <div class="text-xs text-cyan-400">{{ d.group_name or 'Guruhsiz' }}</div>
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <span class="font-bold text-red-400">{{ d.course_price or "650 000 so'm / oy" }}</span>
+                        </td>
+                        <td class="py-3.5 px-4 font-mono text-xs">
+                            <a href="tel:{{ d.phone }}" class="text-cyan-400 hover:underline">{{ d.phone }}</a>
+                        </td>
+                        <td class="py-3.5 px-4 text-xs">
+                            <div class="text-white font-medium">{{ d.parent_name or '—' }}</div>
+                            <div class="text-slate-400 font-mono">{{ d.parent_phone or '—' }}</div>
+                        </td>
+                        <td class="py-3.5 px-4 text-center">
+                            <form action="{{ url_for('admin_finance_remind', student_id=d.id) }}" method="POST" class="inline-block">
+                                <input type="hidden" name="month_for" value="{{ current_month }}">
+                                <button type="submit" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold text-xs shadow-md shadow-blue-500/20 flex items-center gap-1.5 transition-all">
+                                    <i class="fab fa-telegram"></i>
+                                    <span>Eslatma Yuborish</span>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-12 text-slate-500">
+                            <i class="fas fa-check-circle text-3xl text-emerald-400 mb-2 block"></i>
+                            Ajoyib! Joriy oy bo'yicha hech qanday qarzdorlik mavjud emas!
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- SECTION 2: PAYMENT HISTORY TAB -->
+<div id="history-view" class="space-y-4 hidden">
+    <div class="glass-panel p-6 rounded-3xl border border-slate-800">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                <i class="fas fa-clock-rotate-left text-cyan-400"></i>
+                Barcha Muvaffaqiyatli To'lovlar Ro'yxati
+            </h3>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-slate-300">
+                <thead class="text-xs uppercase bg-slate-900/80 text-slate-400 border-b border-slate-800">
+                    <tr>
+                        <th class="py-3 px-4">Sana</th>
+                        <th class="py-3 px-4">O'quvchi</th>
+                        <th class="py-3 px-4">Oy Uchun</th>
+                        <th class="py-3 px-4">Summa</th>
+                        <th class="py-3 px-4">Usul</th>
+                        <th class="py-3 px-4">Izoh</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/60">
+                    {% for p in payments %}
+                    <tr class="hover:bg-slate-800/30 transition-colors">
+                        <td class="py-3.5 px-4 font-mono text-xs text-slate-400">
+                            {{ p.payment_date }}
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <div class="font-bold text-white">{{ p.first_name }} {{ p.last_name }}</div>
+                            <div class="text-xs text-cyan-400">{{ p.group_name or p.course_title or '' }}</div>
+                        </td>
+                        <td class="py-3.5 px-4 font-mono text-xs text-cyan-300">
+                            {{ p.month_for }}
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <span class="font-bold text-emerald-400">{{ "{:,.0f}".format(p.amount)|replace(",", " ") }} so'm</span>
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase
+                                {% if p.payment_method == 'click' %}bg-blue-500/20 text-blue-400 border border-blue-500/30
+                                {% elif p.payment_method == 'payme' %}bg-emerald-500/20 text-emerald-400 border border-emerald-500/30
+                                {% elif p.payment_method == 'cash' %}bg-amber-500/20 text-amber-400 border border-amber-500/30
+                                {% else %}bg-purple-500/20 text-purple-400 border border-purple-500/30{% endif %}">
+                                {{ p.payment_method }}
+                            </span>
+                        </td>
+                        <td class="py-3.5 px-4 text-xs text-slate-400">
+                            {{ p.notes or '—' }}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-12 text-slate-500">
+                            Hozircha hech qanday to'lovlar qayd etilmagan.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: New Payment -->
+<div id="new-payment-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm hidden p-4">
+    <div class="glass-panel w-full max-w-lg p-6 rounded-3xl border border-slate-800 shadow-2xl">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-5">
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                <i class="fas fa-cash-register text-emerald-400"></i>
+                Yangi To'lov Qabul Qilish
+            </h3>
+            <button onclick="closeModal('new-payment-modal')" class="text-slate-400 hover:text-white text-lg">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <form action="{{ url_for('admin_finance_new') }}" method="POST" class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase mb-1.5">O'quvchini tanlang *</label>
+                <select name="student_id" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white text-sm focus:outline-none focus:border-cyan-500">
+                    <option value="">O'quvchini tanlang...</option>
+                    {% for s in all_students %}
+                    <option value="{{ s.id }}">{{ s.first_name }} {{ s.last_name }} ({{ s.group_name or 'Guruhsiz' }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1.5">To'lov Summasi (so'm) *</label>
+                    <input type="number" name="amount" value="650000" step="5000" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white text-sm focus:outline-none focus:border-cyan-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1.5">Qaysi oy uchun *</label>
+                    <input type="month" name="month_for" value="{{ current_month }}" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white text-sm focus:outline-none focus:border-cyan-500">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1.5">To'lov Usuli *</label>
+                    <select name="payment_method" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white text-sm focus:outline-none focus:border-cyan-500">
+                        <option value="click">Click</option>
+                        <option value="payme">Payme</option>
+                        <option value="cash">Naqd pul (Kassa)</option>
+                        <option value="card">Terminal / Karta</option>
+                        <option value="bank_transfer">Bank o'tkazmasi</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1.5">To'lov Sanasi *</label>
+                    <input type="date" name="payment_date" value="{{ today_date }}" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white text-sm focus:outline-none focus:border-cyan-500">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase mb-1.5">Izoh / Kvitansiya raqami</label>
+                <input type="text" name="notes" placeholder="Masalan: Click orqali o'tkazildi, chek №89421" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white text-sm focus:outline-none focus:border-cyan-500">
+            </div>
+
+            <div class="pt-3 flex items-center justify-end space-x-3">
+                <button type="button" onclick="closeModal('new-payment-modal')" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-semibold">
+                    Bekor qilish
+                </button>
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold shadow-lg shadow-emerald-500/25">
+                    To'lovni Saqlash
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function switchTab(tabId) {
+    if (tabId === 'debtors-tab') {
+        document.getElementById('debtors-view').classList.remove('hidden');
+        document.getElementById('history-view').classList.add('hidden');
+        document.getElementById('tab-btn-debtors').className = 'px-5 py-2.5 rounded-xl font-bold text-sm transition-all bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20';
+        document.getElementById('tab-btn-history').className = 'px-5 py-2.5 rounded-xl font-bold text-sm transition-all bg-slate-800 text-slate-300 hover:bg-slate-700';
+    } else {
+        document.getElementById('debtors-view').classList.add('hidden');
+        document.getElementById('history-view').classList.remove('hidden');
+        document.getElementById('tab-btn-debtors').className = 'px-5 py-2.5 rounded-xl font-bold text-sm transition-all bg-slate-800 text-slate-300 hover:bg-slate-700';
+        document.getElementById('tab-btn-history').className = 'px-5 py-2.5 rounded-xl font-bold text-sm transition-all bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20';
+    }
+}
+</script>
+{% endblock %}

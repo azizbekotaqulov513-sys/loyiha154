@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="uz" class="dark scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ center_settings.center_name or 'Azizning 1-chi loyihasi' }} — Zamonaviy Ta'lim & IT Markazi{% endblock %}</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            900: '#070B14',
+                            800: '#0F172A',
+                            700: '#1E293B',
+                            600: '#334155'
+                        },
+                        electric: {
+                            blue: '#0066FF',
+                            cyan: '#00F0FF',
+                            glow: '#38BDF8'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body class="bg-[#070B14] text-slate-100 min-h-screen flex flex-col selection:bg-cyan-500 selection:text-white">
+
+    <!-- Global Toast Notifications Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col space-y-3 max-w-md w-full px-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert-toast flex items-start p-4 rounded-xl shadow-2xl backdrop-blur-md border 
+                        {% if category == 'success' %}
+                            bg-emerald-950/80 border-emerald-500/50 text-emerald-200
+                        {% elif category == 'danger' %}
+                            bg-red-950/80 border-red-500/50 text-red-200
+                        {% elif category == 'warning' %}
+                            bg-amber-950/80 border-amber-500/50 text-amber-200 animate-pulse-warning
+                        {% else %}
+                            bg-blue-950/80 border-blue-500/50 text-blue-200
+                        {% endif %} transition-all duration-300">
+                        <div class="mr-3 text-lg mt-0.5">
+                            {% if category == 'success' %}
+                                <i class="fas fa-check-circle text-emerald-400"></i>
+                            {% elif category == 'danger' %}
+                                <i class="fas fa-exclamation-circle text-red-400"></i>
+                            {% elif category == 'warning' %}
+                                <i class="fas fa-triangle-exclamation text-amber-400"></i>
+                            {% else %}
+                                <i class="fas fa-info-circle text-blue-400"></i>
+                            {% endif %}
+                        </div>
+                        <div class="flex-1 text-sm font-medium">
+                            {{ message }}
+                        </div>
+                        <button onclick="this.parentElement.remove()" class="ml-3 text-slate-400 hover:text-white">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    {% block body %}{% endblock %}
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

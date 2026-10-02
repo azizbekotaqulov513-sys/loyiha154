@@ -1,0 +1,157 @@
+{% extends "admin/layout.html" %}
+
+{% block page_title %}
+    <i class="fas fa-triangle-exclamation text-amber-400 mr-2"></i> Ogohlantirishlar (Baho Pasayishini Tahlil Qilish)
+{% endblock %}
+
+{% block content %}
+<!-- Header Overview -->
+<div class="glass-panel p-6 rounded-3xl border border-amber-500/30 bg-amber-950/10 mb-8">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h2 class="text-xl font-bold text-white flex items-center space-x-2">
+                <span>⚠️ Diqqat! O‘quvchi Natijasi Pasayishi Monitoringi</span>
+            </h2>
+            <p class="text-xs text-slate-300 mt-1 max-w-3xl leading-relaxed">
+                Tizim har bir qo'yilgan bahoni avtomatik tekshirib boradi. Agar o'quvchining baholari ketma-ket pasaysa, o'rtacha balli belgilangan chegaradan pastga tushsa yoki keskin pasayish kuzatilsa, tizim ogohlantirish yaratadi va Telegram orqali xabar yuboradi.
+            </p>
+        </div>
+
+        <!-- Filter tabs -->
+        <div class="flex items-center space-x-2">
+            <a href="{{ url_for('admin_warnings', status='active') }}" class="px-4 py-2 rounded-xl text-xs font-bold transition-all {% if status_filter == 'active' %}bg-red-500 text-white shadow-lg shadow-red-500/30{% else %}bg-slate-800 text-slate-400 hover:text-white{% endif %}">
+                Faol ogohlantirishlar
+            </a>
+            <a href="{{ url_for('admin_warnings', status='resolved') }}" class="px-4 py-2 rounded-xl text-xs font-bold transition-all {% if status_filter == 'resolved' %}bg-emerald-600 text-white shadow-lg shadow-emerald-500/30{% else %}bg-slate-800 text-slate-400 hover:text-white{% endif %}">
+                Hal qilinganlar
+            </a>
+            <a href="{{ url_for('admin_warnings', status='all') }}" class="px-4 py-2 rounded-xl text-xs font-bold transition-all {% if status_filter == 'all' %}bg-blue-600 text-white shadow-lg shadow-blue-500/30{% else %}bg-slate-800 text-slate-400 hover:text-white{% endif %}">
+                Barchasi
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Warning Cards Grid -->
+<div class="space-y-6">
+    {% for w in warnings %}
+    <div class="glass-panel p-6 sm:p-8 rounded-3xl border {% if w.resolved == 0 %}border-red-500/40 bg-slate-900/90 hover:border-red-500/70{% else %}border-slate-800 bg-slate-900/60{% endif %} transition-all shadow-xl">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-slate-800/80">
+            <!-- Student Header -->
+            <div class="flex items-center space-x-4">
+                <div class="w-14 h-14 rounded-2xl {% if w.resolved == 0 %}bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse{% else %}bg-emerald-500/20 text-emerald-400 border border-emerald-500/30{% endif %} flex items-center justify-center text-2xl font-black shrink-0">
+                    <i class="fas fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <a href="{{ url_for('student_detail', id=w.student_id) }}" class="text-xl font-bold text-white hover:text-cyan-400 transition-colors">
+                            {{ w.first_name }} {{ w.last_name }}
+                        </a>
+                        <span class="text-xs px-2.5 py-0.5 rounded-full font-bold
+                            {% if w.resolved == 0 %}bg-red-500/20 text-red-300 border border-red-500/30
+                            {% else %}bg-emerald-500/20 text-emerald-300 border border-emerald-500/30{% endif %}">
+                            {{ 'Faol Ogohlantirish' if w.resolved == 0 else 'Hal Qilindi' }}
+                        </span>
+                    </div>
+                    <div class="text-xs text-slate-400 mt-1 flex flex-wrap items-center gap-3">
+                        <span>Kurs: <strong class="text-slate-200">{{ w.course_title or '—' }}</strong></span>
+                        <span>&bull;</span>
+                        <span>Guruh: <strong class="text-cyan-400">{{ w.group_name or '—' }}</strong></span>
+                        <span>&bull;</span>
+                        <span>Ustoz: <strong class="text-slate-200">{{ w.teacher_name or '—' }}</strong></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center space-x-3">
+                <form method="POST" action="{{ url_for('warning_notify', id=w.id) }}" class="inline">
+                    <button type="submit" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 hover:text-white text-xs font-bold border border-slate-700 transition-all" title="O'quvchi va ota-onaga Telegram orqali qayta ogohlantirish yuborish">
+                        <i class="fab fa-telegram text-cyan-400 mr-1.5"></i> Telegramga qayta yuborish
+                    </button>
+                </form>
+
+                {% if w.resolved == 0 %}
+                <form method="POST" action="{{ url_for('warning_resolve', id=w.id) }}" class="inline">
+                    <button type="submit" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-500/20 transition-all">
+                        <i class="fas fa-check-circle mr-1.5"></i> Hal qilindi
+                    </button>
+                </form>
+                {% endif %}
+
+                <a href="{{ url_for('student_detail', id=w.student_id) }}" class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all">
+                    Profilga o'tish
+                </a>
+            </div>
+        </div>
+
+        <!-- Warning Details Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 py-6">
+            <!-- Oldingi o‘rtacha baho -->
+            <div class="p-4 rounded-2xl bg-slate-950/60 border border-slate-800/80">
+                <span class="text-xs text-slate-400 block mb-1">Oldingi O‘rtacha Baho</span>
+                <div class="text-2xl font-black text-slate-200">{{ w.previous_avg }} ball</div>
+            </div>
+
+            <!-- Hozirgi o‘rtacha baho -->
+            <div class="p-4 rounded-2xl bg-slate-950/60 border border-slate-800/80">
+                <span class="text-xs text-slate-400 block mb-1">Hozirgi O‘rtacha Baho</span>
+                <div class="text-2xl font-black text-red-400">{{ w.current_avg }} ball</div>
+            </div>
+
+            <!-- Qancha pasaygani -->
+            <div class="p-4 rounded-2xl bg-red-950/30 border border-red-500/20">
+                <span class="text-xs text-red-300 block mb-1">Qancha Pasaygani</span>
+                <div class="text-2xl font-black text-red-400">-{{ w.drop_amount }} ball</div>
+            </div>
+
+            <!-- Qaysi fanlarda pasayish borligi -->
+            <div class="p-4 rounded-2xl bg-slate-950/60 border border-slate-800/80">
+                <span class="text-xs text-slate-400 block mb-1">Qaysi Fanlarda Pasayish Bor</span>
+                <div class="text-base font-bold text-cyan-300 truncate">{{ w.subjects }}</div>
+            </div>
+        </div>
+
+        <!-- Sabab & Oxirgi Baholar Feed -->
+        <div class="pt-2">
+            <div class="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700 text-xs text-slate-300 mb-4 flex items-center space-x-2">
+                <i class="fas fa-circle-info text-amber-400 shrink-0"></i>
+                <span><strong>Aniqlangan sabab:</strong> {{ w.trigger_reason }}</span>
+            </div>
+
+            <!-- Oxirgi Baholar -->
+            <div>
+                <span class="text-xs font-semibold text-slate-400 block mb-2">Oxirgi Baholar Tarixi:</span>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {% for g in w.recent_grades %}
+                    <div class="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between">
+                        <div>
+                            <span class="text-[11px] text-slate-400 block">{{ g.assessment_type }}</span>
+                            <span class="text-[10px] text-slate-500 font-mono">{{ g.assessment_date }}</span>
+                        </div>
+                        <span class="px-2 py-1 rounded-lg text-xs font-black
+                            {% if g.score >= 85 %}bg-emerald-500/20 text-emerald-300
+                            {% elif g.score >= 70 %}bg-blue-500/20 text-blue-300
+                            {% elif g.score >= 60 %}bg-amber-500/20 text-amber-300
+                            {% else %}bg-red-500/20 text-red-300{% endif %}">
+                            {{ g.score|round|int if g.score.is_integer() else g.score }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="glass-panel p-16 rounded-3xl border border-slate-800 text-center">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-3xl">
+            <i class="fas fa-check-double"></i>
+        </div>
+        <h3 class="text-xl font-bold text-white mb-2">Hech qanday ogohlantirish topilmadi!</h3>
+        <p class="text-sm text-slate-400 max-w-md mx-auto">
+            Hozirda barcha o'quvchilar belgilangan me'yorlarda tahsil olmoqda. Yangi baholar kiritilganda tizim avtomatik tahlilni davom ettiradi.
+        </p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

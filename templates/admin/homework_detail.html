@@ -1,0 +1,180 @@
+{% extends "admin/layout.html" %}
+
+{% block page_title %}
+    <a href="{{ url_for('admin_homework') }}" class="text-slate-400 hover:text-white mr-2">
+        <i class="fas fa-arrow-left"></i>
+    </a>
+    <i class="fas fa-clipboard-check text-cyan-400 mr-2"></i> {{ homework.title }}
+{% endblock %}
+
+{% block content %}
+<!-- Homework Overview Card -->
+<div class="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 mb-8 shadow-2xl">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+        <div>
+            <div class="flex items-center space-x-2 mb-2">
+                <span class="px-3 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-cyan-300 border border-cyan-500/30">
+                    {{ homework.group_name }}
+                </span>
+                <span class="px-3 py-1 rounded-full text-xs font-bold bg-slate-800 text-slate-300">
+                    {{ homework.course_title }}
+                </span>
+            </div>
+            <h2 class="text-2xl font-black text-white">{{ homework.title }}</h2>
+            <p class="text-xs text-slate-400 mt-1">Ustoz: <strong class="text-white">{{ homework.teacher_name or 'Markaz Ustozi' }}</strong></p>
+        </div>
+
+        <div class="flex items-center space-x-4">
+            <div class="text-right">
+                <span class="text-xs text-slate-400 block">Topshirish muddati:</span>
+                <span class="text-sm font-bold font-mono text-cyan-400">{{ homework.due_date }}</span>
+            </div>
+            <div class="text-right pl-4 border-l border-slate-800">
+                <span class="text-xs text-slate-400 block">Maksimal ball:</span>
+                <span class="text-base font-black font-mono text-emerald-400">{{ homework.max_score }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="pt-6">
+        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Vazifa Tavsifi va Talablar:</h4>
+        <div class="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 text-sm text-slate-300 whitespace-pre-line leading-relaxed">
+            {{ homework.description }}
+        </div>
+    </div>
+</div>
+
+<!-- Submissions Section -->
+<div class="flex items-center justify-between mb-4">
+    <h3 class="text-lg font-bold text-white flex items-center space-x-2">
+        <i class="fas fa-users-viewfinder text-cyan-400"></i>
+        <span>O'quvchilar Topshiriqlari ({{ submissions|length }})</span>
+    </h3>
+</div>
+
+<div class="glass-panel rounded-3xl border border-slate-800 overflow-hidden shadow-2xl">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-slate-300">
+            <thead class="text-xs uppercase bg-slate-900/90 text-slate-400 border-b border-slate-800">
+                <tr>
+                    <th class="px-6 py-4">O'quvchi</th>
+                    <th class="px-6 py-4">Topshirilgan Matn / Javob</th>
+                    <th class="px-6 py-4">Vaqt</th>
+                    <th class="px-6 py-4 text-center">Baho (Ball)</th>
+                    <th class="px-6 py-4 text-center">Holat</th>
+                    <th class="px-6 py-4 text-right">Baholash</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/70">
+                {% for sub in submissions %}
+                <tr class="hover:bg-slate-800/40 transition-colors">
+                    <td class="px-6 py-4">
+                        <div class="font-bold text-white">{{ sub.first_name }} {{ sub.last_name }}</div>
+                        <div class="text-xs text-slate-400 font-mono">ID: #{{ sub.student_id }} | {{ sub.phone }}</div>
+                    </td>
+
+                    <td class="px-6 py-4 max-w-md">
+                        <div class="p-3 rounded-xl bg-slate-950/50 border border-slate-800/80 text-xs text-slate-200 whitespace-pre-line">
+                            {{ sub.submission_text or "—" }}
+                        </div>
+                        {% if sub.feedback %}
+                            <div class="text-[11px] text-cyan-300 mt-1.5 flex items-center space-x-1">
+                                <i class="fas fa-comment-dots text-cyan-400"></i>
+                                <span>Ustoz fikri: {{ sub.feedback }}</span>
+                            </div>
+                        {% endif %}
+                    </td>
+
+                    <td class="px-6 py-4 font-mono text-xs text-slate-400 whitespace-nowrap">
+                        {{ sub.submitted_at }}
+                    </td>
+
+                    <td class="px-6 py-4 text-center font-mono font-bold">
+                        {% if sub.score is not none %}
+                            <span class="text-base text-emerald-400">{{ sub.score }}</span> <span class="text-xs text-slate-500">/ {{ homework.max_score }}</span>
+                        {% else %}
+                            <span class="text-slate-500">—</span>
+                        {% endif %}
+                    </td>
+
+                    <td class="px-6 py-4 text-center">
+                        {% if sub.status == 'graded' %}
+                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                <i class="fas fa-check-circle mr-1"></i> Baholandi
+                            </span>
+                        {% else %}
+                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                <i class="fas fa-clock mr-1"></i> Kutilmoqda
+                            </span>
+                        {% endif %}
+                    </td>
+
+                    <td class="px-6 py-4 text-right">
+                        <button onclick="openGradeModal('{{ sub.id }}', '{{ sub.first_name }} {{ sub.last_name }}', '{{ sub.score or '' }}', '{{ sub.feedback or '' }}')" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs font-bold transition-all shadow-md">
+                            <i class="fas fa-pen-to-square mr-1"></i> Baholash
+                        </button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="px-6 py-12 text-center text-slate-400">
+                        <i class="fas fa-inbox text-4xl mb-3 text-slate-600 block"></i>
+                        Hozircha o'quvchilar tomonidan ushbu vazifa topshirilmagan.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- MODAL: GRADE SUBMISSION -->
+<div id="grade-sub-modal" class="modal-container hidden fixed inset-0 z-50 modal-backdrop items-center justify-center p-4">
+    <div class="glass-panel bg-slate-900 border border-slate-700 max-w-md w-full rounded-3xl p-8 shadow-2xl relative">
+        <button onclick="closeModal('grade-sub-modal')" class="absolute top-5 right-5 text-slate-400 hover:text-white text-xl">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <h3 class="text-xl font-bold text-white mb-1 flex items-center space-x-2">
+            <i class="fas fa-star text-amber-400"></i>
+            <span>Vazifani Baholash</span>
+        </h3>
+        <p class="text-xs text-slate-400 mb-6" id="grade-sub-student-name">O'quvchi topshirig'ini tekshirish</p>
+
+        <form id="grade-sub-form" method="POST" action="" class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Qo'yiladigan Baho (Ball, maks {{ homework.max_score }}) *</label>
+                <input type="number" id="sub-score-input" name="score" step="0.5" min="0" max="{{ homework.max_score }}" required placeholder="Masalan: 95" class="w-full px-4 py-3 rounded-xl form-input-dark text-lg font-bold font-mono text-emerald-400">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Ustoz Fikri va Tavsiyasi</label>
+                <textarea id="sub-feedback-input" name="feedback" rows="3" placeholder="Masalan: Barakalla, barcha mashqlar to'g'ri bajarilgan!" class="w-full px-4 py-3 rounded-xl form-input-dark text-sm"></textarea>
+            </div>
+
+            <div class="p-3.5 rounded-2xl bg-cyan-950/40 border border-cyan-500/30 text-xs text-cyan-200">
+                <i class="fab fa-telegram text-cyan-400 mr-1"></i> Ushbu baho saqlangach, o'quvchiga darhol Telegram orqali xabar boradi!
+            </div>
+
+            <div class="flex justify-end space-x-3 pt-3">
+                <button type="button" onclick="closeModal('grade-sub-modal')" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold">
+                    Bekor qilish
+                </button>
+                <button type="submit" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs font-bold shadow-lg shadow-cyan-500/20">
+                    Bahoni Saqlash
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openGradeModal(subId, studentName, currentScore, currentFeedback) {
+    document.getElementById('grade-sub-form').action = '/admin/homework/submissions/' + subId + '/grade';
+    document.getElementById('grade-sub-student-name').innerText = studentName + " topshirig'i";
+    document.getElementById('sub-score-input').value = currentScore;
+    document.getElementById('sub-feedback-input').value = currentFeedback;
+    openModal('grade-sub-modal');
+}
+</script>
+{% endblock %}

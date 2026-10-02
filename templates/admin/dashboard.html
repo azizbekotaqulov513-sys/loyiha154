@@ -1,0 +1,242 @@
+{% extends "admin/layout.html" %}
+
+{% block page_title %}
+    <i class="fas fa-gauge-high text-cyan-400 mr-2"></i> Asosiy Boshqaruv Paneli
+{% endblock %}
+
+{% block content %}
+<!-- Top Row: 6 KPI Statistics Cards -->
+<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+    <!-- 1. Jami o‘quvchilar -->
+    <div class="glass-panel p-5 rounded-2xl border border-slate-800 flex flex-col justify-between">
+        <div class="flex items-center justify-between text-slate-400 mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider">Jami O‘quvchilar</span>
+            <div class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center text-sm">
+                <i class="fas fa-user-graduate"></i>
+            </div>
+        </div>
+        <div class="text-2xl sm:text-3xl font-black text-white">{{ data.kpi.total_students }}</div>
+        <div class="text-[11px] text-slate-400 mt-1">Ro'yxatga olingan</div>
+    </div>
+
+    <!-- 2. Faol o‘quvchilar -->
+    <div class="glass-panel p-5 rounded-2xl border border-slate-800 flex flex-col justify-between">
+        <div class="flex items-center justify-between text-slate-400 mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider">Faol O‘quvchi</span>
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-sm">
+                <i class="fas fa-user-check"></i>
+            </div>
+        </div>
+        <div class="text-2xl sm:text-3xl font-black text-emerald-400">{{ data.kpi.active_students }}</div>
+        <div class="text-[11px] text-emerald-500/80 mt-1">Hozirda o'qimoqda</div>
+    </div>
+
+    <!-- 3. Guruhlar -->
+    <div class="glass-panel p-5 rounded-2xl border border-slate-800 flex flex-col justify-between">
+        <div class="flex items-center justify-between text-slate-400 mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider">Guruhlar</span>
+            <div class="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center text-sm">
+                <i class="fas fa-users-rectangle"></i>
+            </div>
+        </div>
+        <div class="text-2xl sm:text-3xl font-black text-white">{{ data.kpi.total_groups }}</div>
+        <div class="text-[11px] text-slate-400 mt-1">Faol sinflar</div>
+    </div>
+
+    <!-- 4. Ustozlar -->
+    <div class="glass-panel p-5 rounded-2xl border border-slate-800 flex flex-col justify-between">
+        <div class="flex items-center justify-between text-slate-400 mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider">Ustozlar</span>
+            <div class="w-8 h-8 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-sm">
+                <i class="fas fa-chalkboard-user"></i>
+            </div>
+        </div>
+        <div class="text-2xl sm:text-3xl font-black text-white">{{ data.kpi.total_teachers }}</div>
+        <div class="text-[11px] text-slate-400 mt-1">Pedagoglar jamoasi</div>
+    </div>
+
+    <!-- 5. O‘rtacha baho -->
+    <div class="glass-panel p-5 rounded-2xl border border-slate-800 flex flex-col justify-between">
+        <div class="flex items-center justify-between text-slate-400 mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider">O‘rtacha Baho</span>
+            <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center text-sm">
+                <i class="fas fa-star-half-stroke"></i>
+            </div>
+        </div>
+        <div class="text-2xl sm:text-3xl font-black text-amber-400">{{ data.kpi.overall_avg_grade }}</div>
+        <div class="text-[11px] text-slate-400 mt-1">100 ballik shkala</div>
+    </div>
+
+    <!-- 6. Ogohlantirilgan o‘quvchilar -->
+    <div class="glass-panel p-5 rounded-2xl border border-red-500/30 bg-red-950/20 flex flex-col justify-between">
+        <div class="flex items-center justify-between text-slate-400 mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider text-red-300">Ogohlantirish</span>
+            <div class="w-8 h-8 rounded-lg bg-red-500/20 text-red-400 flex items-center justify-center text-sm animate-pulse">
+                <i class="fas fa-triangle-exclamation"></i>
+            </div>
+        </div>
+        <div class="text-2xl sm:text-3xl font-black text-red-400">{{ data.kpi.warned_students_count }}</div>
+        <div class="text-[11px] text-red-300/80 mt-1">Natijasi pasayganlar</div>
+    </div>
+</div>
+
+<!-- Middle Section: 4 CHARTS GRID -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+    <!-- Chart 1: Baholar statistikasi -->
+    <div class="glass-panel p-6 rounded-3xl border border-slate-800">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                <i class="fas fa-chart-column text-cyan-400"></i>
+                <span>Baholar Statistikasi (Taqsimot)</span>
+            </h3>
+            <span class="text-xs text-slate-400">Barcha fanlar bo'yicha</span>
+        </div>
+        <div class="h-64 relative">
+            <canvas id="chart-distribution"></canvas>
+        </div>
+    </div>
+
+    <!-- Chart 2: O‘quvchilar natijalari (Kategoriyalar) -->
+    <div class="glass-panel p-6 rounded-3xl border border-slate-800">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                <i class="fas fa-chart-pie text-emerald-400"></i>
+                <span>O‘quvchilar Natijalari (Kategoriyalar)</span>
+            </h3>
+            <span class="text-xs text-slate-400">O'rtacha ko'rsatkich</span>
+        </div>
+        <div class="h-64 relative">
+            <canvas id="chart-categories"></canvas>
+        </div>
+    </div>
+
+    <!-- Chart 3: Guruhlar bo‘yicha o‘rtacha natija -->
+    <div class="glass-panel p-6 rounded-3xl border border-slate-800">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                <i class="fas fa-ranking-star text-blue-400"></i>
+                <span>Guruhlar Bo‘yicha O‘rtacha Natija</span>
+            </h3>
+            <span class="text-xs text-slate-400">Guruhlar reytingi</span>
+        </div>
+        <div class="h-64 relative">
+            <canvas id="chart-groups"></canvas>
+        </div>
+    </div>
+
+    <!-- Chart 4: Baholarning vaqt bo‘yicha o‘zgarishi -->
+    <div class="glass-panel p-6 rounded-3xl border border-slate-800">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                <i class="fas fa-arrow-trend-up text-cyan-400"></i>
+                <span>Baholarning Vaqt Bo‘yicha O‘zgarishi</span>
+            </h3>
+            <span class="text-xs text-slate-400">O'rtacha ball dinamikasi</span>
+        </div>
+        <div class="h-64 relative">
+            <canvas id="chart-timeline"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Bottom Section: Active Warnings Feed & Recent Grades -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <!-- Active Warnings List -->
+    <div class="glass-panel p-6 rounded-3xl border border-amber-500/30">
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-lg">
+                    <i class="fas fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-white">⚠️ Diqqat! Natijasi Pasaygan O‘quvchilar</h3>
+                    <span class="text-xs text-slate-400">Avtomatik tizim tahlili</span>
+                </div>
+            </div>
+            <a href="{{ url_for('admin_warnings') }}" class="text-xs font-bold text-amber-400 hover:text-amber-300">
+                Barchasi &rarr;
+            </a>
+        </div>
+
+        {% if data.recent_warnings %}
+            <div class="space-y-4">
+                {% for w in data.recent_warnings %}
+                <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-amber-500/40 transition-colors">
+                    <div class="flex items-center justify-between mb-2">
+                        <a href="{{ url_for('student_detail', id=w.student_id) }}" class="font-bold text-white hover:text-cyan-400 transition-colors">
+                            {{ w.first_name }} {{ w.last_name }}
+                        </a>
+                        <span class="text-xs px-2.5 py-0.5 rounded-full bg-red-500/20 text-red-300 font-bold">
+                            -{{ w.drop_amount }} ball
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-300 mb-3 leading-relaxed">{{ w.trigger_reason }}</p>
+                    <div class="flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-800/80 pt-2">
+                        <span>Oldingi: <strong class="text-slate-200">{{ w.previous_avg }}</strong> &rarr; Hozirgi: <strong class="text-red-400">{{ w.current_avg }}</strong></span>
+                        <div class="space-x-2">
+                            <a href="{{ url_for('student_detail', id=w.student_id) }}" class="text-cyan-400 font-semibold hover:underline">Profil</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-10 text-slate-400 text-sm">
+                <i class="fas fa-circle-check text-emerald-400 text-3xl mb-2"></i>
+                <p>Hozirda natijasi pasaygan o'quvchilar mavjud emas.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Recent Grades Feed -->
+    <div class="glass-panel p-6 rounded-3xl border border-slate-800">
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-500/20 text-cyan-400 flex items-center justify-center text-lg">
+                    <i class="fas fa-receipt"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-white">So'nggi Qo'yilgan Baholar</h3>
+                    <span class="text-xs text-slate-400">Telegram orqali xabar yuborilgan</span>
+                </div>
+            </div>
+            <a href="{{ url_for('admin_grades') }}" class="text-xs font-bold text-cyan-400 hover:text-cyan-300">
+                Barchasi &rarr;
+            </a>
+        </div>
+
+        <div class="space-y-3">
+            {% for g in data.recent_grades %}
+            <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-900/60 border border-slate-800/80">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm
+                        {% if g.score >= 85 %}bg-emerald-500/20 text-emerald-400 border border-emerald-500/30
+                        {% elif g.score >= 70 %}bg-blue-500/20 text-blue-400 border border-blue-500/30
+                        {% elif g.score >= 60 %}bg-amber-500/20 text-amber-400 border border-amber-500/30
+                        {% else %}bg-red-500/20 text-red-400 border border-red-500/30{% endif %}">
+                        {{ g.score|round|int }}
+                    </div>
+                    <div>
+                        <a href="{{ url_for('student_detail', id=g.student_id) }}" class="text-sm font-bold text-white hover:text-cyan-400 transition-colors">
+                            {{ g.first_name }} {{ g.last_name }}
+                        </a>
+                        <div class="text-[11px] text-slate-400">{{ g.subject }} &bull; {{ g.assessment_type }}</div>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-xs text-slate-300">{{ g.assessment_date }}</div>
+                    <span class="text-[10px] text-slate-500">{{ g.comment or 'Izohsiz' }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+    // Pass Chart data safely from Flask to Chart.js script
+    window.dashboardChartData = {{ data.charts | tojson }};
+</script>
+{% endblock %}

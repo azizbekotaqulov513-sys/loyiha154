@@ -1,0 +1,1166 @@
+{% extends "base.html" %}
+
+{% block title %}{{ student.first_name }} {{ student.last_name }} — O‘quvchi Kabineti{% endblock %}
+
+{% block head %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-[#070B14] text-slate-100 flex flex-col">
+    <!-- Student Header -->
+    <header class="glass-nav sticky top-0 z-40 border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <a href="{{ url_for('index') }}" class="flex items-center space-x-2.5 group">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-cyan-500/30">
+                        <i class="fas fa-graduation-cap text-xl"></i>
+                    </div>
+                    <div>
+                        <span class="text-xl font-black tracking-wider text-white">ANTI<span class="text-cyan-400">GRAVITY</span></span>
+                        <span class="block text-[9px] uppercase tracking-widest text-slate-400 font-semibold">O‘quvchi Portali</span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Student info pill & logout -->
+            <div class="flex items-center space-x-4">
+                <div class="hidden sm:flex items-center space-x-3 px-3.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800">
+                    <div class="w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold text-xs">
+                        {{ student.first_name[:1] }}
+                    </div>
+                    <div class="text-xs">
+                        <span class="font-bold text-white block">{{ student.first_name }} {{ student.last_name }}</span>
+                        <span class="text-[10px] text-cyan-400 font-mono">ID: #{{ student.id }}</span>
+                    </div>
+                </div>
+
+                <a href="{{ url_for('student_logout') }}" class="px-3.5 py-2 rounded-xl bg-slate-800/80 hover:bg-red-500/20 text-slate-300 hover:text-red-300 text-xs font-bold border border-slate-700 transition-all flex items-center space-x-1.5">
+                    <i class="fas fa-right-from-bracket"></i>
+                    <span>Chiqish</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Student Dashboard Content -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        <!-- Top Profile & KPI Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Student Card -->
+            <div class="glass-panel p-6 rounded-3xl border border-slate-800 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center space-x-4 mb-5">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white text-2xl font-black shadow-lg shadow-cyan-500/25">
+                            {{ student.first_name[:1] }}{{ student.last_name[:1] }}
+                        </div>
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <h2 class="text-xl font-bold text-white">{{ student.first_name }} {{ student.last_name }}</h2>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2 mt-1.5">
+                                <span class="px-3 py-1 rounded-xl text-xs font-mono font-black bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm" title="Ushbu ID orqali kabinetga kirasiz">
+                                    <i class="fas fa-id-badge mr-1 text-cyan-400"></i> Kirish ID: #{{ student.id }}
+                                </span>
+                                <span class="px-3 py-1 rounded-xl text-xs font-mono font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm" title="Markaz bo'yicha reyting o'rningiz">
+                                    <i class="fas fa-trophy mr-1 text-amber-400"></i> Reyting: #{{ student_rank }}-o'rin
+                                </span>
+                                <span class="px-3 py-1 rounded-xl text-xs font-mono font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm cursor-pointer" onclick="switchCabinetTab('coins')" title="Antigravity Coins balansingiz">
+                                    <i class="fas fa-coins mr-1 text-amber-400"></i> {{ coins_balance }} Coins
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2.5 text-xs py-4 border-t border-slate-800/80">
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Kurs:</span>
+                            <span class="font-bold text-white">{{ student.course_title or '—' }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Guruh:</span>
+                            <span class="font-bold text-cyan-400">{{ student.group_name or '—' }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Ustoz:</span>
+                            <span class="font-bold text-slate-200">{{ student.teacher_name or '—' }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Dars jadvali:</span>
+                            <span class="text-slate-300">{{ student.group_schedule or 'Dushanba-Chorshanba-Juma' }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Xona:</span>
+                            <span class="text-emerald-400 font-semibold">{{ student.group_room or 'Xona —' }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Telegram Bot Integration Card -->
+                <div class="pt-4 border-t border-slate-800/80 space-y-2.5">
+                    <div class="p-3.5 rounded-2xl bg-slate-950/80 border border-blue-500/30 text-xs space-y-2.5 shadow-inner">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <i class="fab fa-telegram text-blue-400 text-lg"></i>
+                                <div>
+                                    <span class="text-[10px] text-slate-400 uppercase tracking-wider font-bold block">Telegram Bot</span>
+                                    <a href="{{ bot_url }}" target="_blank" class="font-mono text-cyan-400 font-bold hover:underline">
+                                        {{ bot_name }}
+                                    </a>
+                                </div>
+                            </div>
+                            {% if student.telegram_chat_id %}
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center space-x-1">
+                                    <i class="fas fa-check-circle text-emerald-400 text-[9px]"></i>
+                                    <span>Ulangan</span>
+                                </span>
+                            {% else %}
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center space-x-1">
+                                    <i class="fas fa-circle-exclamation text-amber-400 text-[9px]"></i>
+                                    <span>Chat ID yo'q</span>
+                                </span>
+                            {% endif %}
+                        </div>
+
+                        <div class="flex items-center justify-between text-[11px] pt-1 border-t border-slate-800/60 text-slate-300">
+                            <span>Chat ID: <strong class="font-mono text-cyan-300" id="current-chat-id-label">{{ student.telegram_chat_id or 'Kiritilmagan' }}</strong></span>
+                            <button type="button" onclick="openTelegramModal()" class="text-cyan-400 hover:text-cyan-300 font-semibold underline">
+                                {% if student.telegram_chat_id %}O'zgartirish{% else %}Ulash{% endif %}
+                            </button>
+                        </div>
+
+                        <a href="{{ bot_url }}" target="_blank" class="block w-full text-center py-2 px-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold text-xs shadow-md transition-all">
+                            <i class="fab fa-telegram-plane mr-1.5"></i> {{ bot_name }} ga o'tish
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats & Progress -->
+            <div class="lg:col-span-2 flex flex-col space-y-6">
+                <!-- 4 KPI Cards -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div class="glass-panel p-4 rounded-2xl border border-slate-800">
+                        <span class="text-xs font-semibold text-slate-400 block mb-1">O‘rtacha Baho</span>
+                        <div class="text-3xl font-black text-amber-400">{{ stats.overall_avg }}</div>
+                        <span class="text-[10px] text-slate-500">Jami: {{ stats.total_grades }} ta baho</span>
+                    </div>
+
+                    <div class="glass-panel p-4 rounded-2xl border border-slate-800">
+                        <span class="text-xs font-semibold text-slate-400 block mb-1">Davomat Foizi</span>
+                        <div class="text-3xl font-black text-emerald-400">{{ stats.attendance_rate }}%</div>
+                        <span class="text-[10px] text-slate-500">Darsda ishtirok</span>
+                    </div>
+
+                    <div class="glass-panel p-4 rounded-2xl border border-slate-800">
+                        <span class="text-xs font-semibold text-slate-400 block mb-1">Haftalik Natija</span>
+                        <div class="text-3xl font-black text-cyan-400">
+                            {{ stats.weekly_avg if stats.weekly_avg is not none else '—' }}
+                        </div>
+                        <span class="text-[10px] text-slate-500">Oxirgi 7 kun</span>
+                    </div>
+
+                    <div class="glass-panel p-4 rounded-2xl border border-slate-800">
+                        <span class="text-xs font-semibold text-slate-400 block mb-1">Oylik Natija</span>
+                        <div class="text-3xl font-black text-blue-400">
+                            {{ stats.monthly_avg if stats.monthly_avg is not none else '—' }}
+                        </div>
+                        <span class="text-[10px] text-slate-500">Oxirgi 30 kun</span>
+                    </div>
+                </div>
+
+                <!-- Personal Progress Chart -->
+                <div class="glass-panel p-6 rounded-3xl border border-slate-800 flex-1">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                            <i class="fas fa-chart-line text-cyan-400"></i>
+                            <span>O‘quv Natijalari Dinamikasi</span>
+                        </h3>
+                        <span class="text-xs text-slate-400">Sana bo'yicha baholanish</span>
+                    </div>
+                    <div class="h-56 relative">
+                        <canvas id="student-cabinet-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN INTERACTIVE SECTION TABS -->
+        <div class="border-b border-slate-800 overflow-x-auto">
+            <nav class="flex space-x-2 sm:space-x-6 min-w-max" aria-label="Tabs">
+                <button type="button" onclick="switchCabinetTab('grades')" id="tab-btn-grades" class="cabinet-tab-btn py-3 px-2 border-b-2 font-bold text-sm flex items-center space-x-2 border-cyan-400 text-cyan-400">
+                    <i class="fas fa-star text-amber-400"></i>
+                    <span>Baholarim & Tarix</span>
+                    <span class="px-2 py-0.5 rounded-full text-xs bg-slate-800 text-slate-300 font-mono">{{ grades|length }}</span>
+                </button>
+
+                <button type="button" onclick="switchCabinetTab('teacher')" id="tab-btn-teacher" class="cabinet-tab-btn py-3 px-2 border-b-2 font-bold text-sm flex items-center space-x-2 border-transparent text-slate-400 hover:text-slate-200">
+                    <i class="fas fa-comment-dots text-cyan-400"></i>
+                    <span>Ustozga Yozish</span>
+                    <span id="teacher-msg-badge" class="px-2 py-0.5 rounded-full text-xs bg-cyan-500/20 text-cyan-300 font-mono">{{ teacher_messages|length }}</span>
+                </button>
+
+                <button type="button" onclick="switchCabinetTab('homework')" id="tab-btn-homework" class="cabinet-tab-btn py-3 px-2 border-b-2 font-bold text-sm flex items-center space-x-2 border-transparent text-slate-400 hover:text-slate-200">
+                    <i class="fas fa-book-open text-emerald-400"></i>
+                    <span>Uyga Vazifalar</span>
+                    <span class="px-2 py-0.5 rounded-full text-xs bg-emerald-500/20 text-emerald-300 font-mono font-bold">{{ homework_list|length }}</span>
+                </button>
+
+                <button type="button" onclick="switchCabinetTab('group')" id="tab-btn-group" class="cabinet-tab-btn py-3 px-2 border-b-2 font-bold text-sm flex items-center space-x-2 border-transparent text-slate-400 hover:text-slate-200">
+                    <i class="fas fa-users text-purple-400"></i>
+                    <span>Guruh Chati</span>
+                    {% if student.group_name %}
+                        <span class="hidden sm:inline-block px-2 py-0.5 rounded-lg text-xs bg-purple-500/20 text-purple-300 font-medium">{{ student.group_name }}</span>
+                    {% endif %}
+                </button>
+
+                <button type="button" onclick="switchCabinetTab('coins')" id="tab-btn-coins" class="cabinet-tab-btn py-3 px-2 border-b-2 font-bold text-sm flex items-center space-x-2 border-transparent text-slate-400 hover:text-slate-200">
+                    <i class="fas fa-gift text-amber-400"></i>
+                    <span>Coin Do'koni</span>
+                    <span class="px-2 py-0.5 rounded-full text-xs bg-amber-500/20 text-amber-300 font-mono font-bold">{{ coins_balance }}</span>
+                </button>
+
+                <button type="button" onclick="switchCabinetTab('quizzes')" id="tab-btn-quizzes" class="cabinet-tab-btn py-3 px-2 border-b-2 font-bold text-sm flex items-center space-x-2 border-transparent text-slate-400 hover:text-slate-200">
+                    <i class="fas fa-stopwatch text-cyan-400"></i>
+                    <span>Viktorinalar</span>
+                    <span class="px-2 py-0.5 rounded-full text-xs bg-cyan-500/20 text-cyan-300 font-mono font-bold">{{ quizzes|length }}</span>
+                </button>
+
+                <button type="button" onclick="switchCabinetTab('certificate')" id="tab-btn-certificate" class="cabinet-tab-btn py-3 px-2 border-b-2 font-bold text-sm flex items-center space-x-2 border-transparent text-slate-400 hover:text-slate-200">
+                    <i class="fas fa-award text-yellow-400"></i>
+                    <span>Sertifikat & ID</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- TAB 1: GRADES & WARNINGS CONTENT -->
+        <div id="tab-content-grades" class="space-y-6">
+            <!-- Active Warnings Alert if any -->
+            {% if warnings %}
+            <div class="glass-panel p-6 rounded-3xl border border-amber-500/40 bg-amber-950/15">
+                <div class="flex items-center space-x-3 mb-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-lg shrink-0">
+                        <i class="fas fa-triangle-exclamation"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-amber-300">⚠️ Ta'lim Natijasi Bo‘yicha Eslatma</h3>
+                        <span class="text-xs text-slate-400">Ustoz va mentor tavsiyasi</span>
+                    </div>
+                </div>
+                {% for w in warnings %}
+                <div class="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 text-xs leading-relaxed space-y-1">
+                    <p class="text-slate-200 font-medium">{{ w.trigger_reason }}</p>
+                    <div class="text-[11px] text-slate-400">
+                        Oldingi o'rtacha: <strong class="text-slate-200">{{ w.previous_avg }}</strong> &rarr; Hozirgi o'rtacha: <strong class="text-red-400">{{ w.current_avg }}</strong> (Pasayish: -{{ w.drop_amount }} ball)
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Grades History Table -->
+            <div class="glass-panel rounded-3xl border border-slate-800 overflow-hidden shadow-2xl">
+                <div class="p-6 border-b border-slate-800 flex items-center justify-between">
+                    <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                        <i class="fas fa-star text-amber-400"></i>
+                        <span>Baholarim Tarixi</span>
+                    </h3>
+                    <span class="text-xs text-slate-400">Jami baholar: {{ grades|length }} ta</span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-300">
+                        <thead class="text-xs uppercase bg-slate-900/90 text-slate-400 border-b border-slate-800">
+                            <tr>
+                                <th class="px-6 py-4">Fan</th>
+                                <th class="px-6 py-4">Sana</th>
+                                <th class="px-6 py-4">Nazorat Turi</th>
+                                <th class="px-6 py-4 text-center">Baho (Ball)</th>
+                                <th class="px-6 py-4">Ustoz Izohi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800/70">
+                            {% for g in grades %}
+                            <tr class="hover:bg-slate-800/40 transition-colors">
+                                <td class="px-6 py-4 font-bold text-white">{{ g.subject }}</td>
+                                <td class="px-6 py-4 text-xs font-mono text-slate-400">{{ g.assessment_date }}</td>
+                                <td class="px-6 py-4 text-xs">
+                                    <span class="px-2.5 py-1 rounded-lg bg-slate-800 text-cyan-300 border border-slate-700">
+                                        {{ g.assessment_type }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-center">
+                                    <span class="inline-block px-3 py-1 rounded-xl font-black text-sm
+                                        {% if g.score >= 85 %}bg-emerald-500/20 text-emerald-300 border border-emerald-500/30
+                                        {% elif g.score >= 70 %}bg-blue-500/20 text-blue-300 border border-blue-500/30
+                                        {% elif g.score >= 60 %}bg-amber-500/20 text-amber-300 border border-amber-500/30
+                                        {% else %}bg-red-500/20 text-red-300 border border-red-500/30{% endif %}">
+                                        {{ g.score|round|int if g.score.is_integer() else g.score }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-xs text-slate-300">
+                                    {{ g.comment or 'Muntazam tayyorgarlik ko\'rib boring.' }}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="px-6 py-8 text-center text-slate-500">
+                                    Hozircha baholar mavjud emas.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: TEACHER DIRECT CHAT CONTENT -->
+        <div id="tab-content-teacher" class="hidden space-y-4">
+            <div class="glass-panel rounded-3xl border border-slate-800 overflow-hidden shadow-2xl flex flex-col h-[620px]">
+                <!-- Chat Header -->
+                <div class="p-4 sm:p-5 border-b border-slate-800 bg-slate-950/60 flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white text-lg font-black shadow-lg shadow-cyan-500/20">
+                            {{ student.teacher_name[:1] if student.teacher_name else 'U' }}
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-white text-base flex items-center space-x-2">
+                                <span>{{ student.teacher_name or "Ustoz" }}</span>
+                                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">Ustoz</span>
+                            </h3>
+                            <p class="text-xs text-slate-400">
+                                {{ student.course_title or "Ta'lim kursi" }} &bull; Savol va topshiriqlar bo'yicha to'g'ridan-to'g'ri muloqot
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="text-right hidden sm:block">
+                        <span class="inline-flex items-center space-x-1.5 text-xs text-emerald-400 font-semibold bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span>Muloqot faol</span>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Chat Messages Scroll Container -->
+                <div id="teacher-messages-box" class="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 bg-slate-950/30">
+                    {% for m in teacher_messages %}
+                        {% if m.sender_type == 'student' %}
+                            <!-- Student Message (Outgoing) -->
+                            <div class="flex justify-end">
+                                <div class="max-w-md bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-2xl rounded-tr-sm p-4 shadow-lg space-y-1">
+                                    <div class="text-xs font-bold text-cyan-100 flex justify-between items-center space-x-4">
+                                        <span>Siz (O‘quvchi)</span>
+                                        <span class="text-[10px] text-cyan-200 font-mono">{{ m.created_at[11:16] if m.created_at|length > 15 else m.created_at }}</span>
+                                    </div>
+                                    <p class="text-sm leading-relaxed whitespace-pre-wrap">{{ m.message }}</p>
+                                </div>
+                            </div>
+                        {% else %}
+                            <!-- Teacher Message (Incoming) -->
+                            <div class="flex justify-start">
+                                <div class="max-w-md bg-slate-900 border border-slate-800 text-slate-100 rounded-2xl rounded-tl-sm p-4 shadow-lg space-y-1">
+                                    <div class="text-xs font-bold text-cyan-400 flex justify-between items-center space-x-4">
+                                        <span class="flex items-center space-x-1">
+                                            <i class="fas fa-chalkboard-user"></i>
+                                            <span>{{ m.teacher_name or student.teacher_name or "Ustoz" }}</span>
+                                        </span>
+                                        <span class="text-[10px] text-slate-400 font-mono">{{ m.created_at[11:16] if m.created_at|length > 15 else m.created_at }}</span>
+                                    </div>
+                                    <p class="text-sm leading-relaxed whitespace-pre-wrap text-slate-200">{{ m.message }}</p>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div id="no-teacher-msg-alert" class="h-full flex flex-col items-center justify-center text-center p-6 text-slate-500 space-y-3">
+                            <div class="w-14 h-14 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-cyan-400 text-2xl">
+                                <i class="fas fa-comment-dots"></i>
+                            </div>
+                            <p class="text-sm">Hozircha ustozingiz bilan xabarlar mavjud emas.<br>Quyidagi maydondan savolingizni yozib yuborishingiz mumkin!</p>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Chat Input Form -->
+                <form id="teacher-chat-form" onsubmit="sendTeacherMessage(event)" class="p-4 border-t border-slate-800 bg-slate-950/80 flex items-center space-x-3">
+                    <input type="text" id="teacher-msg-input" placeholder="Ustozingizga savol yoki xabar yozing..." required autocomplete="off" class="flex-1 px-4 py-3 rounded-2xl form-input-dark text-sm placeholder:text-slate-500 text-white focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+                    <button type="submit" id="teacher-send-btn" class="px-6 py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:scale-105 text-white font-bold text-sm shadow-lg shadow-cyan-500/25 transition-all flex items-center space-x-2">
+                        <span>Yuborish</span>
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- TAB 3: GROUPMATES CHAT CONTENT -->
+        <div id="tab-content-group" class="hidden space-y-4">
+            <div class="glass-panel rounded-3xl border border-slate-800 overflow-hidden shadow-2xl flex flex-col h-[620px]">
+                <!-- Group Header -->
+                <div class="p-4 sm:p-5 border-b border-slate-800 bg-slate-950/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center text-white text-lg font-black shadow-lg shadow-purple-500/20">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-white text-base flex items-center space-x-2">
+                                <span>{{ student.group_name or "Guruh Chati" }}</span>
+                                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">Guruh Chati</span>
+                            </h3>
+                            <p class="text-xs text-slate-400">
+                                {{ student.course_title or "Ta'lim kursi" }} &bull; Guruhdoshlar o'rtasida dars muhokamalari va fikr almashish
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Members Count Pill -->
+                    <div class="flex items-center space-x-2 overflow-x-auto text-xs text-slate-400">
+                        <span class="font-bold text-white"><i class="fas fa-user-group text-purple-400 mr-1"></i> {{ group_members|length }} ta a'zo</span>
+                    </div>
+                </div>
+
+                <!-- Group Messages Scroll Container -->
+                <div id="group-messages-box" class="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 bg-slate-950/30">
+                    {% for m in group_messages %}
+                        {% if m.sender_type == 'student' and m.sender_id == student.id %}
+                            <!-- Current Student Outgoing -->
+                            <div class="flex justify-end">
+                                <div class="max-w-md bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-2xl rounded-tr-sm p-4 shadow-lg space-y-1">
+                                    <div class="text-xs font-bold text-purple-200 flex justify-between items-center space-x-4">
+                                        <span>Siz</span>
+                                        <span class="text-[10px] text-purple-300 font-mono">{{ m.created_at[11:16] if m.created_at|length > 15 else m.created_at }}</span>
+                                    </div>
+                                    <p class="text-sm leading-relaxed whitespace-pre-wrap">{{ m.message }}</p>
+                                </div>
+                            </div>
+                        {% else %}
+                            <!-- Other Groupmates or Teacher Incoming -->
+                            <div class="flex justify-start">
+                                <div class="max-w-md bg-slate-900 border border-slate-800 text-slate-100 rounded-2xl rounded-tl-sm p-4 shadow-lg space-y-1">
+                                    <div class="text-xs font-bold flex justify-between items-center space-x-4">
+                                        <span class="flex items-center space-x-1.5 {% if m.sender_type == 'teacher' %}text-cyan-400{% elif m.sender_type == 'admin' %}text-amber-400{% else %}text-purple-300{% endif %}">
+                                            {% if m.sender_type == 'teacher' %}
+                                                <i class="fas fa-chalkboard-user"></i>
+                                            {% else %}
+                                                <i class="fas fa-user"></i>
+                                            {% endif %}
+                                            <span>{{ m.sender_name }}</span>
+                                        </span>
+                                        <span class="text-[10px] text-slate-400 font-mono">{{ m.created_at[11:16] if m.created_at|length > 15 else m.created_at }}</span>
+                                    </div>
+                                    <p class="text-sm leading-relaxed whitespace-pre-wrap text-slate-200">{{ m.message }}</p>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div id="no-group-msg-alert" class="h-full flex flex-col items-center justify-center text-center p-6 text-slate-500 space-y-3">
+                            <div class="w-14 h-14 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-purple-400 text-2xl">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <p class="text-sm">Guruh chatida hozircha xabarlar yo'q.<br>Birinchi bo'lib guruhdoshlaringiz bilan salomlashing!</p>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Group Chat Input Form -->
+                {% if student.group_id %}
+                <form id="group-chat-form" onsubmit="sendGroupMessage(event)" class="p-4 border-t border-slate-800 bg-slate-950/80 flex items-center space-x-3">
+                    <input type="text" id="group-msg-input" placeholder="Guruhdoshlaringizga xabar yozing..." required autocomplete="off" class="flex-1 px-4 py-3 rounded-2xl form-input-dark text-sm placeholder:text-slate-500 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                    <button type="submit" id="group-send-btn" class="px-6 py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:scale-105 text-white font-bold text-sm shadow-lg shadow-purple-500/25 transition-all flex items-center space-x-2">
+                        <span>Yuborish</span>
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+                {% else %}
+                <div class="p-4 border-t border-slate-800 bg-slate-950/80 text-center text-xs text-amber-400">
+                    <i class="fas fa-info-circle mr-1"></i> Siz hali birorta ham o‘quv guruhiga kiritilmagansiz. Guruhga qo‘shilish uchun ma'muriyatga murojaat qiling.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    
+        <!-- TAB 4: HOMEWORK (UYGA VAZIFALAR) -->
+        <div id="tab-content-homework" class="hidden space-y-6">
+            <div class="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-2xl">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-800">
+                    <div>
+                        <h3 class="text-lg font-bold text-white flex items-center space-x-2">
+                            <i class="fas fa-book-open text-emerald-400"></i>
+                            <span>Guruh Uyga Vazifalari</span>
+                        </h3>
+                        <p class="text-xs text-slate-400">Ustoz tomonidan berilgan vazifalarni bajaring va yechimni topshiring</p>
+                    </div>
+                    <span class="text-xs px-3 py-1.5 rounded-xl bg-slate-900 text-slate-300 border border-slate-800">
+                        Jami: <strong class="text-emerald-400">{{ homework_list|length }}</strong> ta vazifa
+                    </span>
+                </div>
+
+                <div class="space-y-4">
+                    {% for hw in homework_list %}
+                    <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-emerald-500/30 transition-all flex flex-col md:flex-row md:items-start justify-between gap-5">
+                        <div class="space-y-3 flex-1">
+                            <div class="flex items-center space-x-2">
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-cyan-300 border border-blue-500/30">
+                                    {{ hw.course_title or 'Kurs' }}
+                                </span>
+                                <span class="text-xs text-amber-300 font-mono font-semibold">
+                                    <i class="fas fa-clock mr-1 text-amber-400"></i> Muddat: {{ hw.due_date }}
+                                </span>
+                            </div>
+
+                            <h4 class="text-base font-bold text-white">{{ hw.title }}</h4>
+
+                            <div class="text-xs text-slate-200 whitespace-pre-line bg-slate-950/70 p-3.5 rounded-xl border border-slate-800/80">
+                                {{ hw.description }}
+                            </div>
+
+                            {% if hw.submission_id %}
+                                <div class="p-3.5 rounded-xl bg-slate-950 border border-blue-500/20 text-xs space-y-1.5">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-slate-400 font-bold">Topshirgan yechimingiz:</span>
+                                        <span class="text-[10px] text-slate-500 font-mono">{{ hw.submitted_at }}</span>
+                                    </div>
+                                    <p class="text-slate-200 italic">«{{ hw.submission_text }}»</p>
+                                    {% if hw.submission_status == 'graded' %}
+                                        <div class="mt-2 pt-2 border-t border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                            <span class="text-emerald-400 font-black">Ustoz bahosi: {{ hw.submission_score }} / {{ hw.max_score }} ball</span>
+                                            {% if hw.submission_feedback %}
+                                                <span class="text-slate-300 italic">💬 Fikr: «{{ hw.submission_feedback }}»</span>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="flex flex-col items-end justify-center space-y-2.5 shrink-0 self-start md:self-center">
+                            {% if hw.submission_status == 'graded' %}
+                                <span class="px-3.5 py-1.5 rounded-full text-xs font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center space-x-1.5">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Baholandi: {{ hw.submission_score }} ball</span>
+                                </span>
+                            {% elif hw.submission_status == 'submitted' %}
+                                <span class="px-3.5 py-1.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center space-x-1.5">
+                                    <i class="fas fa-hourglass-half"></i>
+                                    <span>Tekshirilmoqda</span>
+                                </span>
+                                <button onclick="openStudentSubmitModal('{{ hw.id }}', '{{ hw.title|escape }}', '{{ hw.submission_text|escape }}')" class="text-xs text-cyan-400 hover:text-cyan-300 font-bold underline">
+                                    Yechimni tahrirlash
+                                </button>
+                            {% else %}
+                                <span class="px-3.5 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700">
+                                    Topshirilmagan
+                                </span>
+                                <button onclick="openStudentSubmitModal('{{ hw.id }}', '{{ hw.title|escape }}', '')" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-extrabold shadow-lg shadow-emerald-500/20 hover:scale-105 transition-all flex items-center space-x-1.5">
+                                    <i class="fas fa-paper-plane"></i>
+                                    <span>Vazifani Topshirish</span>
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="p-10 text-center text-slate-500">
+                        <i class="fas fa-book-open text-4xl text-slate-600 mb-2 block"></i>
+                        Hozircha guruhingizga yangi vazifa yuklanmagan.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 5: COINS & REWARDS SHOP -->
+        <div id="tab-content-coins" class="space-y-6 hidden">
+            <!-- Balance Banner -->
+            <div class="glass-panel p-6 sm:p-8 rounded-3xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-slate-900 to-slate-950 flex flex-col md:flex-row items-center justify-between gap-6">
+                <div class="flex items-center space-x-5">
+                    <div class="w-16 h-16 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center text-3xl shadow-xl shadow-amber-500/20">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                    <div>
+                        <span class="text-xs uppercase font-bold text-amber-300 tracking-wider">Antigravity Gamifikatsiya & Mukofotlar</span>
+                        <h2 class="text-2xl sm:text-3xl font-black text-white mt-0.5 flex items-center gap-2">
+                            <span>{{ coins_balance }}</span>
+                            <span class="text-amber-400 text-lg font-bold">Coins</span>
+                        </h2>
+                        <p class="text-xs text-slate-300 mt-1">
+                            A'lo baholar, 100% davomat va viktorinalarda qatnashib coinlarni to'plang va markaz sovrinlariga almashtiring!
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 text-center text-xs shrink-0 bg-slate-900/80 p-3.5 rounded-2xl border border-slate-800">
+                    <div class="p-2">
+                        <span class="text-amber-400 font-bold block text-sm">+20 Coin</span>
+                        <span class="text-slate-400 text-[11px]">A'lo baho uchun</span>
+                    </div>
+                    <div class="p-2 border-l border-slate-800">
+                        <span class="text-cyan-400 font-bold block text-sm">+40 Coin</span>
+                        <span class="text-slate-400 text-[11px]">Viktorina uchun</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rewards Catalog Grid -->
+            <div>
+                <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <i class="fas fa-gift text-amber-400"></i>
+                    <span>Mavjud Sovrinlar Katalogi</span>
+                </h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {% for r in rewards %}
+                    <div class="glass-panel p-6 rounded-3xl border border-slate-800 flex flex-col justify-between hover:border-amber-500/40 transition-all group">
+                        <div>
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                                    <i class="fas fa-{{ r.icon or 'gift' }}"></i>
+                                </div>
+                                <span class="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-black flex items-center gap-1.5">
+                                    <i class="fas fa-coins text-amber-400"></i>
+                                    {{ r.cost_coins }} Coins
+                                </span>
+                            </div>
+
+                            <h4 class="text-base font-bold text-white mb-1.5">{{ r.title }}</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed mb-4">{{ r.description }}</p>
+                        </div>
+
+                        <div class="pt-4 border-t border-slate-800 flex items-center justify-between">
+                            <span class="text-[11px] text-slate-400">
+                                Qoldi: <b class="text-white">{{ r.stock }} dona</b>
+                            </span>
+
+                            <form action="{{ url_for('student_reward_buy') }}" method="POST" onsubmit="return confirm('Haqiqatan ham «{{ r.title }}» sovrinini {{ r.cost_coins }} coinga xarid qilmoqchimisiz?');">
+                                <input type="hidden" name="reward_id" value="{{ r.id }}">
+                                {% if coins_balance >= r.cost_coins and r.stock > 0 %}
+                                <button type="submit" class="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs shadow-md shadow-amber-500/20 transition-all">
+                                    Xarid Qilish
+                                </button>
+                                {% else %}
+                                <button type="button" disabled class="px-4 py-2 rounded-xl bg-slate-800 text-slate-500 font-bold text-xs cursor-not-allowed">
+                                    {% if r.stock <= 0 %}Omborda yo'q{% else %}Coin yetarli emas{% endif %}
+                                </button>
+                                {% endif %}
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Orders & Transactions History -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4">
+                <!-- My Reward Orders -->
+                <div class="glass-panel p-6 rounded-3xl border border-slate-800">
+                    <h4 class="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                        <i class="fas fa-clock-rotate-left text-cyan-400"></i>
+                        <span>Mening Buyurtmalarim</span>
+                    </h4>
+                    <div class="space-y-3">
+                        {% for o in reward_orders %}
+                        <div class="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-between text-xs">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
+                                    <i class="fas fa-{{ o.icon or 'gift' }}"></i>
+                                </div>
+                                <div>
+                                    <span class="font-bold text-white block">{{ o.reward_title }}</span>
+                                    <span class="text-[10px] text-slate-400">{{ o.ordered_at }}</span>
+                                </div>
+                            </div>
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold
+                                {% if o.status == 'delivered' %}bg-emerald-500/20 text-emerald-400 border border-emerald-500/30
+                                {% else %}bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse{% endif %}">
+                                {{ 'Topshirildi' if o.status == 'delivered' else 'Kutilmoqda' }}
+                            </span>
+                        </div>
+                        {% else %}
+                        <p class="text-xs text-slate-500 text-center py-6">Hozircha buyurtmalar berilmagan.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Recent Coins History -->
+                <div class="glass-panel p-6 rounded-3xl border border-slate-800">
+                    <h4 class="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                        <i class="fas fa-list text-amber-400"></i>
+                        <span>Coinlar Tarixi</span>
+                    </h4>
+                    <div class="space-y-2.5 text-xs">
+                        {% for t in coins_transactions %}
+                        <div class="p-3 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-between">
+                            <div>
+                                <span class="text-slate-200 font-medium block">{{ t.reason }}</span>
+                                <span class="text-[10px] text-slate-500">{{ t.created_at }}</span>
+                            </div>
+                            <span class="font-black font-mono {% if t.amount > 0 %}text-emerald-400{% else %}text-red-400{% endif %}">
+                                {% if t.amount > 0 %}+{{ t.amount }}{% else %}{{ t.amount }}{% endif %}
+                            </span>
+                        </div>
+                        {% else %}
+                        <p class="text-xs text-slate-500 text-center py-6">Hozircha coin operatsiyalari mavjud emas.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 6: QUIZ ARENA (INTERACTIVE QUIZZES) -->
+        <div id="tab-content-quizzes" class="space-y-6 hidden">
+            <div class="glass-panel p-6 sm:p-8 rounded-3xl border border-cyan-500/30 bg-gradient-to-br from-cyan-500/10 via-slate-900 to-slate-950 flex flex-col md:flex-row items-center justify-between gap-6">
+                <div class="flex items-center space-x-5">
+                    <div class="w-16 h-16 rounded-2xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 flex items-center justify-center text-3xl shadow-xl shadow-cyan-500/20">
+                        <i class="fas fa-stopwatch"></i>
+                    </div>
+                    <div>
+                        <span class="text-xs uppercase font-bold text-cyan-300 tracking-wider">Interaktiv Viktorina & Bilim Sinovi</span>
+                        <h2 class="text-2xl sm:text-3xl font-black text-white mt-0.5">Antigravity Quiz Arena</h2>
+                        <p class="text-xs text-slate-300 mt-1">
+                            Bilimingizni sinab ko'ring, testlarni belgilangan vaqtda topshiring va qo'shimcha coinlarni qo'lga kiriting!
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for q in quizzes %}
+                <div class="glass-panel p-6 rounded-3xl border border-slate-800 flex flex-col justify-between hover:border-cyan-500/50 transition-all group">
+                    <div>
+                        <div class="flex items-start justify-between mb-4">
+                            <span class="px-3 py-1 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 text-xs font-bold">
+                                <i class="fas fa-clock mr-1"></i> {{ q.time_limit_minutes }} daqiqa
+                            </span>
+                            <span class="text-xs text-amber-400 font-bold flex items-center gap-1">
+                                <i class="fas fa-coins text-xs"></i> +40 Coin
+                            </span>
+                        </div>
+
+                        <h4 class="text-base font-bold text-white mb-2 group-hover:text-cyan-400 transition-colors">
+                            {{ q.title }}
+                        </h4>
+                        <p class="text-xs text-slate-400 leading-relaxed mb-4">
+                            {{ q.description or 'Mavzular bo\'yicha interaktiv bilim sinovi' }}
+                        </p>
+
+                        <div class="p-3 rounded-2xl bg-slate-900/60 border border-slate-800 text-xs space-y-1.5 mb-4">
+                            <div class="flex justify-between text-slate-400">
+                                <span>Savollar soni:</span>
+                                <span class="font-bold text-white">{{ q.question_count }} ta</span>
+                            </div>
+                            <div class="flex justify-between text-slate-400">
+                                <span>O'tish bali:</span>
+                                <span class="font-bold text-cyan-400">{{ q.passing_score }}%</span>
+                            </div>
+                            {% if q.best_score is not none %}
+                            <div class="flex justify-between pt-1 border-t border-slate-800">
+                                <span class="text-slate-400">Eng yaxshi natijangiz:</span>
+                                <span class="font-bold {% if q.is_passed %}text-emerald-400{% else %}text-amber-400{% endif %}">
+                                    {{ q.best_score }}% {% if q.is_passed %}(O'tgan){% endif %}
+                                </span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <a href="{{ url_for('student_quiz_take', quiz_id=q.id) }}" class="w-full text-center py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center gap-2">
+                        <i class="fas fa-play"></i>
+                        <span>{% if q.best_score is not none %}Qayta topshirish{% else %}Testni Boshlash{% endif %}</span>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- TAB 7: CERTIFICATE & ID BADGE -->
+        <div id="tab-content-certificate" class="space-y-6 hidden">
+            <div class="glass-panel p-6 sm:p-8 rounded-3xl border border-yellow-500/30 bg-gradient-to-br from-yellow-500/10 via-slate-900 to-slate-950 flex flex-col md:flex-row items-center justify-between gap-6">
+                <div class="flex items-center space-x-5">
+                    <div class="w-16 h-16 rounded-2xl bg-yellow-500/20 text-yellow-400 border border-yellow-500/40 flex items-center justify-center text-3xl shadow-xl shadow-yellow-500/20">
+                        <i class="fas fa-award"></i>
+                    </div>
+                    <div>
+                        <span class="text-xs uppercase font-bold text-yellow-300 tracking-wider">Xalqaro Akademik Tasdiqnoma</span>
+                        <h2 class="text-2xl sm:text-3xl font-black text-white mt-0.5">Rasmiy Sertifikat & Beyjik</h2>
+                        <p class="text-xs text-slate-300 mt-1">
+                            QR-kod bilan himoyalangan rasmiy sertifikat va plastik ID kartangizni ko'ring yoki chop eting.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-3">
+                    <a href="{{ url_for('student_own_certificate') }}" target="_blank" class="px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/20 flex items-center gap-2 transition-all">
+                        <i class="fas fa-award"></i>
+                        <span>Sertifikatni Ochish (PDF)</span>
+                    </a>
+                    <a href="{{ url_for('admin_student_id_card', id=student.id) }}" target="_blank" class="px-5 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-cyan-500/30 font-bold text-xs flex items-center gap-2 transition-all">
+                        <i class="fas fa-id-badge"></i>
+                        <span>ID Beyjikni Ochish</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Certificate Preview Card -->
+            <div class="glass-panel p-6 rounded-3xl border border-slate-800 flex flex-col items-center justify-center text-center py-12">
+                <div class="w-24 h-24 rounded-full bg-gradient-to-tr from-amber-500/20 to-yellow-500/20 text-amber-400 flex items-center justify-center text-4xl mb-4 border border-amber-500/30 shadow-xl">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                <h3 class="text-xl font-black text-white">
+                    {{ student.first_name }} {{ student.last_name }}
+                </h3>
+                <p class="text-xs text-cyan-400 font-semibold mt-1">
+                    {{ student.course_title or 'Kurs tinglovchisi' }} &bull; O'rtacha baho: {{ stats.overall_avg }} ball
+                </p>
+                <div class="mt-4 p-4 rounded-2xl bg-white/5 border border-white/10 max-w-md text-xs text-slate-300 leading-relaxed">
+                    Sertifikat serial raqami: <strong class="font-mono text-cyan-300">AGY-CERT-{{ "%05d" % student.id }}-2026</strong>. 
+                    Ushbu sertifikat va ID karta QR kod orqali istalgan joydan tekshirilishi mumkin.
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- TELEGRAM CHAT ID UPDATE MODAL -->
+    <div id="telegram-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div class="glass-panel w-full max-w-md p-6 sm:p-8 rounded-3xl border border-blue-500/40 shadow-2xl space-y-5">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-blue-600/20 text-cyan-400 flex items-center justify-center text-xl">
+                        <i class="fab fa-telegram"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white">Telegram Botni Ulash</h3>
+                        <p class="text-xs text-slate-400">{{ bot_name }}</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeTelegramModal()" class="text-slate-400 hover:text-white p-2">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Instructions -->
+            <div class="space-y-3 text-xs text-slate-300 bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
+                <p class="font-bold text-cyan-300">Qanday qilib Chat ID olinadi?</p>
+                <ol class="list-decimal list-inside space-y-1.5 text-slate-300">
+                    <li>Telegramda <a href="{{ bot_url }}" target="_blank" class="text-cyan-400 font-bold underline">{{ bot_name }}</a> ga kiring.</li>
+                    <li>Botga <strong>/start</strong> buyrug‘ini yuboring.</li>
+                    <li>Bot sizning <strong>Chat ID</strong> raqamingizni chiqarib beradi.</li>
+                    <li>O‘sha raqamni quyidagi maydonga kiriting va saqlang!</li>
+                </ol>
+            </div>
+
+            <form id="telegram-form" onsubmit="saveTelegramChatId(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-2">Telegram Chat ID</label>
+                    <input type="text" id="telegram-chat-id-input" value="{{ student.telegram_chat_id or '' }}" placeholder="Masalan: 123456789" required class="w-full px-4 py-3 rounded-xl form-input-dark text-sm font-mono text-cyan-300">
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" onclick="closeTelegramModal()" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all">
+                        Bekor qilish
+                    </button>
+                    <button type="submit" id="save-telegram-btn" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:scale-105 text-white text-xs font-bold shadow-lg shadow-cyan-500/25 transition-all">
+                        <i class="fas fa-check mr-1.5"></i> Saqlash
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    
+    <!-- STUDENT SUBMIT HOMEWORK MODAL -->
+    <div id="submit-homework-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div class="glass-panel w-full max-w-lg p-6 sm:p-8 rounded-3xl border border-emerald-500/40 shadow-2xl space-y-5">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-600/20 text-emerald-400 flex items-center justify-center text-xl">
+                        <i class="fas fa-paper-plane"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white">Uyga Vazifani Topshirish</h3>
+                        <p class="text-xs text-slate-400" id="submit-hw-title">Vazifa</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeStudentSubmitModal()" class="text-slate-400 hover:text-white p-2">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+
+            <form method="POST" action="{{ url_for('student_homework_submit') }}" class="space-y-4">
+                <input type="hidden" id="submit-hw-id" name="homework_id" value="">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-2">Javobingiz / Masalalar Yechimi *</label>
+                    <textarea id="submit-hw-text" name="submission_text" rows="6" required placeholder="Masalalar yechimi, tushuntirish yoki natijalarni shu yerga yozing..." class="w-full px-4 py-3 rounded-xl form-input-dark text-sm"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-2">Qo'shimcha Havola (Google Drive / GitHub) - Ixtiyoriy</label>
+                    <input type="url" name="file_url" placeholder="https://drive.google.com/..." class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm font-mono">
+                </div>
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" onclick="closeStudentSubmitModal()" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold">
+                        Bekor qilish
+                    </button>
+                    <button type="submit" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:scale-105 text-white text-xs font-bold shadow-lg shadow-emerald-500/25 transition-all">
+                        <i class="fas fa-check mr-1"></i> Ustozga Topshirish
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 border-t border-slate-800 py-6 text-center text-xs text-slate-500">
+        ANTIGRAVITY Ta'lim Markazi &copy; {{ current_year }}. Barcha huquqlar himoyalangan.
+    </footer>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Tab Switching Logic
+    
+    function openStudentSubmitModal(hwId, hwTitle, currentText) {
+        document.getElementById('submit-hw-id').value = hwId;
+        document.getElementById('submit-hw-title').innerText = hwTitle;
+        document.getElementById('submit-hw-text').value = currentText || '';
+        document.getElementById('submit-homework-modal').classList.remove('hidden');
+    }
+
+    function closeStudentSubmitModal() {
+        document.getElementById('submit-homework-modal').classList.add('hidden');
+    }
+
+    function switchCabinetTab(tabName) {
+        // Tab buttons
+        document.querySelectorAll('.cabinet-tab-btn').forEach(btn => {
+            btn.classList.remove('border-cyan-400', 'text-cyan-400');
+            btn.classList.add('border-transparent', 'text-slate-400');
+        });
+
+        // Tab contents
+        const tabIds = ['grades', 'teacher', 'homework', 'group', 'coins', 'quizzes', 'certificate'];
+        tabIds.forEach(id => {
+            const el = document.getElementById('tab-content-' + id);
+            if (el) el.classList.add('hidden');
+        });
+
+        // Activate selected
+        const activeBtn = document.getElementById('tab-btn-' + tabName);
+        if (activeBtn) {
+            activeBtn.classList.add('border-cyan-400', 'text-cyan-400');
+            activeBtn.classList.remove('border-transparent', 'text-slate-400');
+        }
+
+        const activeContent = document.getElementById('tab-content-' + tabName);
+        if (activeContent) {
+            activeContent.classList.remove('hidden');
+        }
+
+        if (tabName === 'teacher') {
+            scrollTeacherChatBottom();
+        } else if (tabName === 'group') {
+            scrollGroupChatBottom();
+        }
+    }
+
+    function scrollTeacherChatBottom() {
+        const box = document.getElementById('teacher-messages-box');
+        if (box) box.scrollTop = box.scrollHeight;
+    }
+
+    function scrollGroupChatBottom() {
+        const box = document.getElementById('group-messages-box');
+        if (box) box.scrollTop = box.scrollHeight;
+    }
+
+    // Modal Control
+    function openTelegramModal() {
+        document.getElementById('telegram-modal').classList.remove('hidden');
+    }
+    function closeTelegramModal() {
+        document.getElementById('telegram-modal').classList.add('hidden');
+    }
+
+    // Save Telegram Chat ID
+    async function saveTelegramChatId(e) {
+        e.preventDefault();
+        const chatId = document.getElementById('telegram-chat-id-input').value.trim();
+        const btn = document.getElementById('save-telegram-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Saqlanmoqda...';
+
+        const formData = new FormData();
+        formData.append('telegram_chat_id', chatId);
+
+        try {
+            const res = await fetch('/api/student/update-telegram', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById('current-chat-id-label').textContent = chatId || 'Kiritilmagan';
+                closeTelegramModal();
+                alert("Telegram Chat ID muvaffaqiyatli saqlandi! Endi baholar @kino05_promaks_bot orqali yuboriladi.");
+                location.reload();
+            } else {
+                alert(data.message || "Xatolik yuz berdi");
+            }
+        } catch(err) {
+            alert("Ulanish xatosi: " + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check mr-1.5"></i> Saqlash';
+        }
+    }
+
+    // Send Teacher Message
+    async function sendTeacherMessage(e) {
+        e.preventDefault();
+        const input = document.getElementById('teacher-msg-input');
+        const text = input.value.trim();
+        if (!text) return;
+
+        const btn = document.getElementById('teacher-send-btn');
+        btn.disabled = true;
+
+        const formData = new FormData();
+        formData.append('message', text);
+
+        try {
+            const res = await fetch('/api/chat/teacher/send', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success) {
+                input.value = '';
+                const alertEl = document.getElementById('no-teacher-msg-alert');
+                if (alertEl) alertEl.remove();
+
+                const box = document.getElementById('teacher-messages-box');
+                const timeStr = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const bubble = document.createElement('div');
+                bubble.className = 'flex justify-end';
+                bubble.innerHTML = `
+                    <div class="max-w-md bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-2xl rounded-tr-sm p-4 shadow-lg space-y-1">
+                        <div class="text-xs font-bold text-cyan-100 flex justify-between items-center space-x-4">
+                            <span>Siz (O‘quvchi)</span>
+                            <span class="text-[10px] text-cyan-200 font-mono">${timeStr}</span>
+                        </div>
+                        <p class="text-sm leading-relaxed whitespace-pre-wrap">${escapeHtml(text)}</p>
+                    </div>
+                `;
+                box.appendChild(bubble);
+                scrollTeacherChatBottom();
+            } else {
+                alert(data.message || "Xabar yuborilmadi");
+            }
+        } catch(err) {
+            alert("Xatolik: " + err.message);
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    // Send Group Message
+    async function sendGroupMessage(e) {
+        e.preventDefault();
+        const input = document.getElementById('group-msg-input');
+        const text = input.value.trim();
+        if (!text) return;
+
+        const btn = document.getElementById('group-send-btn');
+        btn.disabled = true;
+
+        const formData = new FormData();
+        formData.append('message', text);
+
+        try {
+            const res = await fetch('/api/chat/group/send', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success) {
+                input.value = '';
+                const alertEl = document.getElementById('no-group-msg-alert');
+                if (alertEl) alertEl.remove();
+
+                const box = document.getElementById('group-messages-box');
+                const timeStr = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const bubble = document.createElement('div');
+                bubble.className = 'flex justify-end';
+                bubble.innerHTML = `
+                    <div class="max-w-md bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-2xl rounded-tr-sm p-4 shadow-lg space-y-1">
+                        <div class="text-xs font-bold text-purple-200 flex justify-between items-center space-x-4">
+                            <span>Siz</span>
+                            <span class="text-[10px] text-purple-300 font-mono">${timeStr}</span>
+                        </div>
+                        <p class="text-sm leading-relaxed whitespace-pre-wrap">${escapeHtml(text)}</p>
+                    </div>
+                `;
+                box.appendChild(bubble);
+                scrollGroupChatBottom();
+            } else {
+                alert(data.message || "Xabar yuborilmadi");
+            }
+        } catch(err) {
+            alert("Xatolik: " + err.message);
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    function escapeHtml(str) {
+        return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    // Chart.js initialization
+    document.addEventListener('DOMContentLoaded', () => {
+        const labels = {{ chart_labels | tojson }};
+        const scores = {{ chart_scores | tojson }};
+        const ctx = document.getElementById('student-cabinet-chart');
+
+        if (ctx && labels.length > 0) {
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: "Baholarim",
+                        data: scores,
+                        borderColor: '#00F0FF',
+                        backgroundColor: 'rgba(0, 240, 255, 0.12)',
+                        tension: 0.35,
+                        fill: true,
+                        pointBackgroundColor: '#0066FF',
+                        pointBorderColor: '#00F0FF',
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            min: 40,
+                            max: 100,
+                            grid: { color: 'rgba(255, 255, 255, 0.06)' },
+                            ticks: { color: '#94a3b8' }
+                        },
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.04)' },
+                            ticks: { color: '#94a3b8' }
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

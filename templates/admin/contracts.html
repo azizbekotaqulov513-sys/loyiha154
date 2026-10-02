@@ -1,0 +1,361 @@
+{% extends "admin/layout.html" %}
+
+{% block page_title %}
+    <span>📜 O'quv Shartnomalari & Hujjatlar Markazi</span>
+{% endblock %}
+
+{% block content %}
+<!-- Top Metrics Row -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="glass-panel p-6 rounded-3xl border border-slate-800">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Jami Shartnomalar</p>
+                <h3 class="text-3xl font-black text-white mt-1">{{ contracts|length }} ta</h3>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-xl">
+                <i class="fas fa-file-contract"></i>
+            </div>
+        </div>
+        <p class="text-xs text-slate-400 mt-3">Rasmiylashtirilgan o'quv kontraktlari</p>
+    </div>
+
+    <div class="glass-panel p-6 rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 to-transparent">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Faol Shartnomalar</p>
+                <h3 class="text-3xl font-black text-emerald-400 mt-1">{{ active_count }} ta</h3>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl">
+                <i class="fas fa-certificate"></i>
+            </div>
+        </div>
+        <p class="text-xs text-emerald-300/80 mt-3">Yuridik kuchga ega va amalda</p>
+    </div>
+
+    <div class="glass-panel p-6 rounded-3xl border border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-amber-400 uppercase tracking-wider">Shartnoma Umumiy Summasi</p>
+                <h3 class="text-2xl font-black text-amber-400 mt-1">{{ total_contract_sum|format_currency }}</h3>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-xl">
+                <i class="fas fa-coins"></i>
+            </div>
+        </div>
+        <p class="text-xs text-slate-400 mt-3">Yillik/Mavsumiy tuzilgan shartnomalar</p>
+    </div>
+
+    <div class="glass-panel p-6 rounded-3xl border border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-transparent">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-purple-400 uppercase tracking-wider">Shartnoma Qamrovi</p>
+                <h3 class="text-3xl font-black text-purple-400 mt-1">{{ coverage_rate }}%</h3>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-400 flex items-center justify-center text-xl">
+                <i class="fas fa-signature"></i>
+            </div>
+        </div>
+        <p class="text-xs text-slate-400 mt-3">Talabalarning shartnoma bilan ta'minlanishi</p>
+    </div>
+</div>
+
+<!-- Header Controls & New Contract Button -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div class="flex items-center gap-3">
+        <input type="text" id="contractSearchInput" onkeyup="filterContractsTable()" placeholder="Shartnoma № yoki talaba ismi..." 
+            class="bg-slate-900/90 border border-slate-700 rounded-2xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 w-72">
+        
+        <select id="contractStatusFilter" onchange="filterContractsTable()" class="bg-slate-900/90 border border-slate-700 rounded-2xl px-4 py-2.5 text-sm text-slate-300 focus:outline-none focus:border-cyan-500">
+            <option value="">Barcha holatlar</option>
+            <option value="active">Faol</option>
+            <option value="completed">Tugallangan</option>
+            <option value="terminated">Bekor qilingan</option>
+        </select>
+    </div>
+
+    <button onclick="openNewContractModal()" class="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black text-sm shadow-lg shadow-cyan-500/20 transition-all flex items-center gap-2">
+        <i class="fas fa-plus"></i> Yangi Shartnoma Tuzish
+    </button>
+</div>
+
+<!-- Contracts Table -->
+<div class="glass-panel rounded-3xl border border-slate-800 overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-slate-300" id="contractsTable">
+            <thead class="bg-slate-950/60 text-slate-400 text-xs font-bold uppercase tracking-wider border-b border-slate-800">
+                <tr>
+                    <th class="p-4 pl-6">Shartnoma №</th>
+                    <th class="p-4">Talaba / Tinglovchi</th>
+                    <th class="p-4">Ota-ona / Vasiy</th>
+                    <th class="p-4">Kurs / Yo'nalish</th>
+                    <th class="p-4">Oylik To'lov</th>
+                    <th class="p-4">Muddat</th>
+                    <th class="p-4">Holati</th>
+                    <th class="p-4 pr-6 text-right">Amallar</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/60">
+                {% for c in contracts %}
+                <tr class="hover:bg-slate-800/30 transition-colors contract-row" data-search="{{ c.contract_number|lower }} {{ c.student_name|lower }} {{ c.parent_name|lower }}" data-status="{{ c.status }}">
+                    <td class="p-4 pl-6">
+                        <div class="flex items-center gap-2">
+                            <span class="font-mono font-bold text-cyan-400 bg-cyan-500/10 px-2.5 py-1 rounded-lg border border-cyan-500/20 text-xs">
+                                {{ c.contract_number }}
+                            </span>
+                        </div>
+                    </td>
+                    <td class="p-4">
+                        <div class="font-bold text-white">{{ c.student_name }}</div>
+                        <span class="text-xs text-slate-500">ID: #{{ c.student_id }}</span>
+                    </td>
+                    <td class="p-4">
+                        <div class="text-slate-200 font-medium">{{ c.parent_name or 'O\'zi (Voyaga yetgan)' }}</div>
+                        <div class="text-xs text-slate-500">{{ c.parent_phone or '—' }}</div>
+                    </td>
+                    <td class="p-4">
+                        <span class="px-2.5 py-1 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">
+                            {{ c.course_name }}
+                        </span>
+                    </td>
+                    <td class="p-4">
+                        <div class="font-bold text-emerald-400">{{ c.monthly_amount|format_currency }}</div>
+                        <span class="text-[11px] text-slate-500">Jami: {{ c.total_amount|format_currency }}</span>
+                    </td>
+                    <td class="p-4 text-xs font-mono text-slate-400">
+                        {{ c.start_date }} &rarr; {{ c.end_date }}
+                    </td>
+                    <td class="p-4">
+                        {% if c.status == 'active' %}
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                Faol
+                            </span>
+                        {% elif c.status == 'completed' %}
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                                Tugallangan
+                            </span>
+                        {% else %}
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                                Bekor qilingan
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="p-4 pr-6 text-right">
+                        <div class="flex items-center justify-end gap-2">
+                            <a href="{{ url_for('admin_contract_view', contract_id=c.id) }}" target="_blank"
+                                class="px-3 py-1.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 text-xs font-bold transition-all flex items-center gap-1.5">
+                                <i class="fas fa-eye"></i> Ko'rish
+                            </a>
+                            {% if c.status != 'terminated' %}
+                            <button type="button" onclick="openTerminateModal({{ c.id }}, '{{ c.contract_number }}', '{{ c.student_name }}')"
+                                class="px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-bold transition-all flex items-center gap-1.5" title="Shartnomani bekor qilish">
+                                <i class="fas fa-ban"></i> Bekor qilish
+                            </button>
+                            {% else %}
+                            <form action="{{ url_for('admin_reactivate_contract', contract_id=c.id) }}" method="POST" onsubmit="return confirm('Haqiqatan ham ushbu shartnomani qayta faollashtirmoqchimisiz?');" class="inline">
+                                <button type="submit" class="px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold transition-all flex items-center gap-1.5" title="Qayta faollashtirish">
+                                    <i class="fas fa-rotate-left"></i> Qayta tiklash
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="p-12 text-center text-slate-500">
+                        <div class="w-16 h-16 rounded-2xl bg-slate-800 text-slate-600 flex items-center justify-center text-2xl mx-auto mb-3">
+                            <i class="fas fa-file-circle-xmark"></i>
+                        </div>
+                        <p class="text-sm font-semibold">Hech qanday shartnoma topilmadi</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal: Terminate Contract -->
+<div id="terminateContractModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-rose-500/40 max-w-lg w-full rounded-3xl p-6 shadow-2xl relative">
+        <button onclick="closeTerminateModal()" class="absolute top-6 right-6 text-slate-400 hover:text-white text-lg">
+            <i class="fas fa-xmark"></i>
+        </button>
+
+        <div class="flex items-center gap-3 pb-4 border-b border-slate-800 mb-4">
+            <div class="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center justify-center text-xl">
+                <i class="fas fa-file-circle-xmark"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold text-white">Shartnomani Bekor Qilish</h3>
+                <p class="text-xs text-rose-400/80 font-mono" id="terminateContractLabel">№ SH-... | Talaba</p>
+            </div>
+        </div>
+
+        <form id="terminateContractForm" method="POST" action="" class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-300 mb-1">Bekor qilish sababi *</label>
+                <select id="reasonTypeSelect" onchange="checkReasonPreset(this)" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:border-rose-500 mb-2">
+                    <option value="Tinglovchining o'z xohishiga ko'ra (oilaviy sharoit)">Tinglovchining o'z xohishiga ko'ra (oilaviy sharoit)</option>
+                    <option value="Kurs jadvali vaqti to'g'ri kelmaganligi sababli">Kurs jadvali vaqti to'g'ri kelmaganligi sababli</option>
+                    <option value="O'qish to'lovlari o'z vaqtida amalga oshirilmaganligi">O'qish to'lovlari o'z vaqtida amalga oshirilmaganligi</option>
+                    <option value="Boshqa shaharga yoki muassasaga ko'chib o'tganligi">Boshqa shaharga yoki muassasaga ko'chib o'tganligi</option>
+                    <option value="Ichki tartib-qoidalarni qo'pol ravishda buzganligi">Ichki tartib-qoidalarni qo'pol ravishda buzganligi</option>
+                    <option value="custom">Boshqa alohida sabab...</option>
+                </select>
+                <textarea name="termination_reason" id="terminationReasonText" rows="3" required placeholder="Batafsil sababni kiriting..." 
+                    class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-white placeholder-slate-500 focus:border-rose-500">Tinglovchining o'z xohishiga ko'ra (oilaviy sharoit)</textarea>
+            </div>
+
+            <div class="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-xs text-rose-300 flex items-start gap-2">
+                <i class="fas fa-triangle-exclamation text-rose-400 mt-0.5"></i>
+                <span>Ushbu shartnoma holati rasman <strong>«Bekor qilingan»</strong> deb qayd etiladi va hujjatda bekor qilish muhri hamda sababi ko'rsatiladi.</span>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-2">
+                <button type="button" onclick="closeTerminateModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs font-semibold">
+                    Qaytish
+                </button>
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-lg shadow-rose-600/30 transition-all flex items-center gap-2">
+                    <i class="fas fa-ban"></i> Shartnomani Bekor Qilish
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: New Contract Generator -->
+<div id="newContractModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 max-w-2xl w-full rounded-3xl p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+        <button onclick="closeNewContractModal()" class="absolute top-6 right-6 text-slate-400 hover:text-white text-lg">
+            <i class="fas fa-xmark"></i>
+        </button>
+
+        <div class="flex items-center gap-3 pb-6 border-b border-slate-800 mb-6">
+            <div class="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 flex items-center justify-center text-xl">
+                <i class="fas fa-file-circle-plus"></i>
+            </div>
+            <div>
+                <h3 class="text-xl font-bold text-white">Yangi O'quv Shartnomasi Generatori</h3>
+                <p class="text-xs text-slate-400">Ikki tomonlama rasmiy shartnoma yaratish va QR muhrlash</p>
+            </div>
+        </div>
+
+        <form action="{{ url_for('admin_new_contract') }}" method="POST" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">O'quvchini Tanlang *</label>
+                    <select name="student_id" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:border-cyan-500">
+                        {% for st in students %}
+                            <option value="{{ st.id }}">{{ st.full_name }} ({{ st.group_name or 'Guruhsiz' }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Kurs / Yo'nalish *</label>
+                    <select name="course_id" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:border-cyan-500">
+                        {% for c in courses %}
+                            <option value="{{ c.id }}">{{ c.name }} ({{ c.price|format_currency }}/oy)</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Ota-ona / Vasiy Ismi (Agar voyaga yetmagan bo'lsa)</label>
+                    <input type="text" name="parent_name" placeholder="Masalan: Aliyev Botir Rustamovich" 
+                        class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Ota-ona Telefon Raqami</label>
+                    <input type="text" name="parent_phone" placeholder="+998 90 123 45 67" 
+                        class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Pasport / ID Karta Seriyasi</label>
+                    <input type="text" name="passport_series" placeholder="AA 1234567" 
+                        class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Oylik To'lov Summasi (so'm) *</label>
+                    <input type="number" name="monthly_amount" value="650000" required
+                        class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:border-cyan-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Boshlanish Sanasi *</label>
+                    <input type="date" name="start_date" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:border-cyan-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Tugash Sanasi *</label>
+                    <input type="date" name="end_date" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:border-cyan-500">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-300 mb-1">Qo'shimcha Izoh / Shartlar</label>
+                <textarea name="notes" rows="2" placeholder="Masalan: 10% do'stlar chegirmasi qo'llanilgan..." 
+                    class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-white placeholder-slate-500 focus:border-cyan-500"></textarea>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+                <button type="button" onclick="closeNewContractModal()" class="px-5 py-2.5 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs font-semibold">
+                    Bekor qilish
+                </button>
+                <button type="submit" class="px-6 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-sm shadow-lg shadow-cyan-500/20 transition-all flex items-center gap-2">
+                    <i class="fas fa-check"></i> Shartnomani Rasmiylashtirish
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function filterContractsTable() {
+        const query = document.getElementById('contractSearchInput').value.toLowerCase();
+        const status = document.getElementById('contractStatusFilter').value;
+        const rows = document.querySelectorAll('.contract-row');
+
+        rows.forEach(r => {
+            const searchVal = r.getAttribute('data-search') || '';
+            const statusVal = r.getAttribute('data-status') || '';
+            const matchQ = searchVal.includes(query);
+            const matchS = !status || statusVal === status;
+            r.style.display = (matchQ && matchS) ? '' : 'none';
+        });
+    }
+
+    function openNewContractModal() {
+        document.getElementById('newContractModal').classList.remove('hidden');
+    }
+
+    function closeNewContractModal() {
+        document.getElementById('newContractModal').classList.add('hidden');
+    }
+
+    function openTerminateModal(contractId, contractNumber, studentName) {
+        document.getElementById('terminateContractForm').action = '/admin/contracts/' + contractId + '/terminate';
+        document.getElementById('terminateContractLabel').textContent = '№ ' + contractNumber + ' | ' + studentName;
+        document.getElementById('terminateContractModal').classList.remove('hidden');
+    }
+
+    function closeTerminateModal() {
+        document.getElementById('terminateContractModal').classList.add('hidden');
+    }
+
+    function checkReasonPreset(selectEl) {
+        const textarea = document.getElementById('terminationReasonText');
+        if (selectEl.value === 'custom') {
+            textarea.value = '';
+            textarea.focus();
+        } else {
+            textarea.value = selectEl.value;
+        }
+    }
+</script>
+{% endblock %}

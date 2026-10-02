@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Tizimga Kirish — Azizning 1-chi loyihasi{% endblock %}
+
+{% block body %}
+<div class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-[#070B14]">
+    <!-- Ambient glowing backgrounds -->
+    <div class="absolute top-1/4 left-1/3 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-blue-600/15 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute bottom-1/4 right-1/3 w-[450px] h-[450px] bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="max-w-md w-full glass-panel bg-slate-900/80 border border-slate-800 rounded-3xl p-8 shadow-2xl relative z-10">
+        <!-- Logo & Title -->
+        <div class="text-center mb-8">
+            <a href="{{ url_for('index') }}" class="inline-flex items-center space-x-2.5 mb-3 group">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center text-white shadow-lg shadow-blue-500/30 group-hover:scale-105 transition-transform">
+                    <i class="fas fa-atom text-2xl"></i>
+                </div>
+                <span class="text-xl font-black tracking-wider text-white">AZIZNING <span class="text-cyan-400">1-CHI LOYIHASI</span></span>
+            </a>
+            <h2 class="text-xl font-bold text-white">Boshqaruv Tizimiga Kirish</h2>
+            <p class="text-xs text-slate-400 mt-1">Admin va o'qituvchilar uchun maxsus portal</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('login', next=request.args.get('next', '')) }}" class="space-y-5">
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Login / Foydalanuvchi nomi</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+                        <i class="fas fa-user"></i>
+                    </span>
+                    <input type="text" name="username" id="input-username" required placeholder="admin" class="w-full pl-10 pr-4 py-3 rounded-xl form-input-dark text-sm">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Maxfiy Parol</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+                        <i class="fas fa-lock"></i>
+                    </span>
+                    <input type="password" name="password" id="input-password" required placeholder="••••••••" class="w-full pl-10 pr-4 py-3 rounded-xl form-input-dark text-sm">
+                </div>
+            </div>
+
+            <button type="submit" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-500 text-white font-extrabold shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:scale-[1.01] active:scale-[0.99] transition-all">
+                <i class="fas fa-right-to-bracket mr-2"></i> Tizimga kirish
+            </button>
+        </form>
+
+        <!-- Quick credentials picker for instant testing -->
+        <div class="mt-8 pt-6 border-t border-slate-800 text-xs">
+            <span class="text-slate-400 block mb-2 font-semibold text-center">Tezkor kirish (Sinov profillari):</span>
+            <div class="grid grid-cols-2 gap-2">
+                <button type="button" onclick="fillCreds('admin', 'admin123')" class="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 text-left transition-all">
+                    <div class="font-bold text-cyan-400"><i class="fas fa-crown mr-1"></i> Super Admin</div>
+                    <div class="text-[10px] text-slate-400">admin / admin123</div>
+                </button>
+                <button type="button" onclick="fillCreds('ustoz', 'ustoz123')" class="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 text-left transition-all">
+                    <div class="font-bold text-emerald-400"><i class="fas fa-chalkboard-user mr-1"></i> Ustoz</div>
+                    <div class="text-[10px] text-slate-400">ustoz / ustoz123</div>
+                </button>
+            </div>
+        </div>
+
+        <div class="mt-6 text-center">
+            <a href="{{ url_for('index') }}" class="text-xs text-slate-400 hover:text-cyan-400 transition-colors">
+                &larr; Asosiy saytga qaytish
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+function fillCreds(u, p) {
+    document.getElementById('input-username').value = u;
+    document.getElementById('input-password').value = p;
+}
+</script>
+{% endblock %}

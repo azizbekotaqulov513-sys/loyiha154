@@ -1,0 +1,208 @@
+{% extends "admin/layout.html" %}
+
+{% block page_title %}
+    <i class="fas fa-chalkboard-user text-cyan-400 mr-2"></i> Ustozlar Boshqaruvi
+{% endblock %}
+
+{% block content %}
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+    <div>
+        <h2 class="text-xl font-bold text-white">Pedagoglar Jamoasi</h2>
+        <p class="text-xs text-slate-400">Ustozlar ma'lumotlari, tajribasi va biriktirilgan guruhlar</p>
+    </div>
+    {% if current_user.role in ['superadmin', 'admin'] %}
+    <button onclick="openModal('add-teacher-modal')" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs font-extrabold shadow-lg shadow-cyan-500/20 transition-all">
+        <i class="fas fa-user-plus mr-1.5"></i> Yangi ustoz qo'shish
+    </button>
+    {% endif %}
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for t in teachers %}
+    <div class="glass-panel p-6 rounded-3xl border border-slate-800 flex flex-col justify-between group">
+        <div>
+            <div class="flex items-center space-x-4 mb-5">
+                <img src="{{ t.photo_url or 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400' }}" alt="{{ t.full_name }}" class="w-16 h-16 rounded-2xl object-cover border border-slate-700">
+                <div>
+                    <h3 class="text-lg font-bold text-white group-hover:text-cyan-400 transition-colors">{{ t.full_name }}</h3>
+                    <span class="text-xs text-cyan-400 font-semibold">{{ t.subject }}</span>
+                    <div class="text-[11px] text-slate-400">{{ t.experience_years }}+ yil pedagogik tajriba</div>
+                </div>
+            </div>
+
+            <p class="text-xs text-slate-300 leading-relaxed mb-6">{{ t.bio }}</p>
+
+            <div class="space-y-2 py-4 border-t border-slate-800/80 text-xs">
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Telefon:</span>
+                    <span class="font-bold text-white">{{ t.phone or '—' }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Email:</span>
+                    <span class="text-slate-300">{{ t.email or '—' }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Guruhlar soni:</span>
+                    <span class="font-bold text-cyan-300">{{ t.groups_count }} ta guruh</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Jami o'quvchilari:</span>
+                    <span class="font-bold text-purple-300">{{ t.students_count }} nafar</span>
+                </div>
+            </div>
+        </div>
+
+        {% if current_user.role in ['superadmin', 'admin'] %}
+        <div class="pt-4 border-t border-slate-800/80 flex items-center justify-between">
+            <button onclick="openEditTeacher('{{ t.id }}', '{{ t.full_name }}', '{{ t.subject }}', '{{ t.experience_years }}', '{{ t.phone }}', '{{ t.email }}', '{{ t.photo_url }}', '{{ t.bio }}')" class="text-xs font-bold text-cyan-400 hover:text-cyan-300">
+                <i class="fas fa-pen-to-square mr-1"></i> Tahrirlash
+            </button>
+            <form method="POST" action="{{ url_for('teacher_delete', id=t.id) }}" onsubmit="return confirm('Ustozni o\'chirmoqchimisiz?');" class="inline">
+                <button type="submit" class="text-xs text-slate-500 hover:text-red-400 transition-colors">
+                    <i class="fas fa-trash-can mr-1"></i> O'chirish
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+<!-- MODAL: ADD TEACHER -->
+<div id="add-teacher-modal" class="modal-container hidden fixed inset-0 z-50 modal-backdrop items-center justify-center p-4">
+    <div class="glass-panel bg-slate-900 border border-slate-700 max-w-lg w-full rounded-3xl p-8 shadow-2xl relative">
+        <button onclick="closeModal('add-teacher-modal')" class="absolute top-5 right-5 text-slate-400 hover:text-white text-xl">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <h3 class="text-xl font-bold text-white mb-6 flex items-center space-x-2">
+            <i class="fas fa-chalkboard-user text-cyan-400"></i>
+            <span>Yangi Ustoz Qo‘shish</span>
+        </h3>
+
+        <form method="POST" action="{{ url_for('teacher_create') }}" class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-1">F.I.SH *</label>
+                <input type="text" name="full_name" required placeholder="Sanjar Alimov" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Fan *</label>
+                    <input type="text" name="subject" required placeholder="IELTS / Ingliz tili" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Tajriba (yil) *</label>
+                    <input type="number" name="experience_years" min="1" max="50" required placeholder="5" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Telefon</label>
+                    <input type="tel" name="phone" placeholder="+998 90 123 45 67" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Email</label>
+                    <input type="email" name="email" placeholder="ustoz@antigravity.uz" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Rasm Havolasi (URL)</label>
+                <input type="text" name="photo_url" placeholder="https://images.unsplash.com/..." class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Qisqa Bio / Yutuqlari *</label>
+                <textarea name="bio" rows="3" required placeholder="Pedagogik tajribasi, sertifikatlari..." class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm"></textarea>
+            </div>
+
+            <div class="pt-2 flex space-x-3">
+                <button type="button" onclick="closeModal('add-teacher-modal')" class="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-bold transition-all">
+                    Bekor qilish
+                </button>
+                <button type="submit" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-sm font-extrabold shadow-lg shadow-cyan-500/20 transition-all">
+                    Qo'shish
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: EDIT TEACHER -->
+<div id="edit-teacher-modal" class="modal-container hidden fixed inset-0 z-50 modal-backdrop items-center justify-center p-4">
+    <div class="glass-panel bg-slate-900 border border-slate-700 max-w-lg w-full rounded-3xl p-8 shadow-2xl relative">
+        <button onclick="closeModal('edit-teacher-modal')" class="absolute top-5 right-5 text-slate-400 hover:text-white text-xl">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <h3 class="text-xl font-bold text-white mb-6 flex items-center space-x-2">
+            <i class="fas fa-user-pen text-cyan-400"></i>
+            <span>Ustoz Ma'lumotlarini Tahrirlash</span>
+        </h3>
+
+        <form id="edit-teacher-form" method="POST" action="" class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-1">F.I.SH *</label>
+                <input type="text" name="full_name" id="edit-teacher-name" required class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Fan *</label>
+                    <input type="text" name="subject" id="edit-teacher-subject" required class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Tajriba (yil) *</label>
+                    <input type="number" name="experience_years" id="edit-teacher-exp" min="1" max="50" required class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Telefon</label>
+                    <input type="tel" name="phone" id="edit-teacher-phone" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Email</label>
+                    <input type="email" name="email" id="edit-teacher-email" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Rasm Havolasi (URL)</label>
+                <input type="text" name="photo_url" id="edit-teacher-photo" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Qisqa Bio / Yutuqlari *</label>
+                <textarea name="bio" id="edit-teacher-bio" rows="3" required class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm"></textarea>
+            </div>
+
+            <div class="pt-2 flex space-x-3">
+                <button type="button" onclick="closeModal('edit-teacher-modal')" class="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-bold transition-all">
+                    Bekor qilish
+                </button>
+                <button type="submit" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-sm font-extrabold shadow-lg shadow-cyan-500/20 transition-all">
+                    Saqlash
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openEditTeacher(id, name, subject, exp, phone, email, photo, bio) {
+    document.getElementById('edit-teacher-form').action = '/admin/teachers/' + id + '/update';
+    document.getElementById('edit-teacher-name').value = name;
+    document.getElementById('edit-teacher-subject').value = subject;
+    document.getElementById('edit-teacher-exp').value = exp;
+    document.getElementById('edit-teacher-phone').value = phone || '';
+    document.getElementById('edit-teacher-email').value = email || '';
+    document.getElementById('edit-teacher-photo').value = photo || '';
+    document.getElementById('edit-teacher-bio').value = bio || '';
+    openModal('edit-teacher-modal');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,425 @@
+{% extends "admin/layout.html" %}
+
+{% block page_title %}
+    <i class="fas fa-user-graduate text-cyan-400 mr-2"></i> O‘quvchilarni Boshqarish
+{% endblock %}
+
+{% block content %}
+<!-- Search, Filters, and Add Button Bar -->
+<div class="glass-panel p-6 rounded-3xl border border-slate-800 mb-8">
+    <form method="GET" action="{{ url_for('admin_students') }}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <!-- Search Input -->
+        <div class="lg:col-span-2">
+            <label class="block text-xs font-semibold text-slate-400 mb-1">Qidirish (Ism, Familiya, Telefon, Telegram ID)</label>
+            <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+                    <i class="fas fa-search"></i>
+                </span>
+                <input type="text" name="search" value="{{ search }}" placeholder="Masalan: Aziz Karimov..." class="w-full pl-10 pr-4 py-2.5 rounded-xl form-input-dark text-sm">
+            </div>
+        </div>
+
+        <!-- Course Filter -->
+        <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">Kurs bo'yicha</label>
+            <select name="course_id" class="w-full px-3 py-2.5 rounded-xl form-input-dark text-sm bg-slate-900" onchange="this.form.submit()">
+                <option value="">Barcha kurslar</option>
+                {% for c in courses %}
+                    <option value="{{ c.id }}" {% if selected_course == c.id|string %}selected{% endif %}>{{ c.title }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Group Filter -->
+        <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">Guruh bo'yicha</label>
+            <select name="group_id" class="w-full px-3 py-2.5 rounded-xl form-input-dark text-sm bg-slate-900" onchange="this.form.submit()">
+                <option value="">Barcha guruhlar</option>
+                {% for g in groups %}
+                    <option value="{{ g.id }}" {% if selected_group == g.id|string %}selected{% endif %}>{{ g.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Filter Actions -->
+        <div class="flex items-end space-x-2">
+            <button type="submit" class="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold transition-all">
+                Filtr
+            </button>
+            <a href="{{ url_for('admin_students') }}" class="px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm" title="Tozalash">
+                <i class="fas fa-rotate-left"></i>
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Header Action Row -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <div class="flex items-center space-x-3">
+        <span class="text-sm text-slate-400">Jami: <strong class="text-white">{{ total_students }}</strong> nafar o'quvchi <span class="text-xs text-slate-500">({{ current_page }}-sahifa / {{ total_pages }})</span></span>
+        {% if warning_filter == '1' %}
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-500/20 text-red-300 border border-red-500/30">
+                Faqat ogohlantirilganlar
+            </span>
+        {% endif %}
+    </div>
+
+    <div class="flex items-center space-x-3">
+        <a href="{{ url_for('admin_students', warning='1' if warning_filter != '1' else '') }}" class="px-4 py-2.5 rounded-xl text-xs font-bold border transition-all {% if warning_filter == '1' %}bg-red-500 text-white border-red-500{% else %}bg-slate-800/80 hover:bg-slate-750 text-amber-300 border-amber-500/30{% endif %}">
+            <i class="fas fa-triangle-exclamation mr-1.5"></i> Natijasi pasayganlar
+        </a>
+        {% if current_user.role in ['superadmin', 'admin'] %}
+        <button onclick="openModal('add-student-modal')" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs font-extrabold shadow-lg shadow-cyan-500/20 hover:scale-[1.02] transition-all">
+            <i class="fas fa-user-plus mr-1.5"></i> Yangi o‘quvchi qo‘shish
+        </button>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Students Table -->
+<div class="glass-panel rounded-3xl border border-slate-800 overflow-hidden shadow-2xl">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-slate-300">
+            <thead class="text-xs uppercase bg-slate-900/90 text-slate-400 border-b border-slate-800">
+                <tr>
+                    <th scope="col" class="px-6 py-4">O‘quvchi</th>
+                    <th scope="col" class="px-6 py-4">Kurs / Guruh</th>
+                    <th scope="col" class="px-6 py-4">Ustoz</th>
+                    <th scope="col" class="px-6 py-4">Telegram Chat ID</th>
+                    <th scope="col" class="px-6 py-4 text-center">O‘rtacha Baho</th>
+                    <th scope="col" class="px-6 py-4 text-center">Holat</th>
+                    <th scope="col" class="px-6 py-4 text-right">Amallar</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/70">
+                {% for s in students %}
+                <tr class="hover:bg-slate-800/40 transition-colors">
+                    <!-- Student Info -->
+                    <td class="px-6 py-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-xl bg-blue-600/20 text-cyan-400 font-bold flex items-center justify-center shrink-0 border border-cyan-500/20">
+                                {{ s.first_name[:1] }}{{ s.last_name[:1] }}
+                            </div>
+                                <div class="flex items-center space-x-2">
+                                    <a href="{{ url_for('student_detail', id=s.id) }}" class="font-bold text-white hover:text-cyan-400 transition-colors">
+                                        {{ s.first_name }} {{ s.last_name }}
+                                    </a>
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30" title="Tizimga kirish Local ID raqami">ID: #{{ s.id }}</span>
+                                </div>
+                                <div class="text-xs text-slate-400">{{ s.phone }}</div>
+                            </div>
+                        </div>
+                    </td>
+
+                    <!-- Course / Group -->
+                    <td class="px-6 py-4">
+                        <div class="font-semibold text-white">{{ s.course_title or '—' }}</div>
+                        <div class="text-xs text-cyan-400">{{ s.group_name or 'Guruhsiz' }}</div>
+                    </td>
+
+                    <!-- Teacher -->
+                    <td class="px-6 py-4 text-slate-300">
+                        {{ s.teacher_name or '—' }}
+                    </td>
+
+                    <!-- Telegram Chat IDs -->
+                    <td class="px-6 py-4">
+                        {% if s.telegram_chat_id %}
+                            <span class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-300 text-xs font-mono">
+                                <i class="fab fa-telegram text-blue-400"></i>
+                                <span>{{ s.telegram_chat_id }}</span>
+                            </span>
+                        {% else %}
+                            <span class="text-xs text-slate-500 italic">Kiritilmagan</span>
+                        {% endif %}
+                        {% if s.parent_telegram_chat_id %}
+                            <div class="text-[10px] text-slate-400 mt-1 flex items-center space-x-1">
+                                <i class="fas fa-user-group text-purple-400"></i>
+                                <span>Ota-ona: {{ s.parent_telegram_chat_id }}</span>
+                            </div>
+                        {% endif %}
+                    </td>
+
+                    <!-- Average score & Warning Indicator -->
+                    <td class="px-6 py-4 text-center">
+                        {% if s.avg_score %}
+                            <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl font-black text-sm
+                                {% if s.avg_score >= 85 %}bg-emerald-500/20 text-emerald-300 border border-emerald-500/30
+                                {% elif s.avg_score >= 70 %}bg-blue-500/20 text-blue-300 border border-blue-500/30
+                                {% elif s.avg_score >= 60 %}bg-amber-500/20 text-amber-300 border border-amber-500/30
+                                {% else %}bg-red-500/20 text-red-300 border border-red-500/30{% endif %}">
+                                <span>{{ s.avg_score }}</span>
+                            </div>
+                            {% if s.active_warnings > 0 %}
+                                <div class="mt-1">
+                                    <span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/20 text-red-300 animate-pulse border border-red-500/40">
+                                        <i class="fas fa-triangle-exclamation"></i>
+                                        <span>Pasayish!</span>
+                                    </span>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-xs text-slate-500">Baholanmagan</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Status -->
+                    <td class="px-6 py-4 text-center">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-semibold
+                            {% if s.status == 'active' %}bg-emerald-500/20 text-emerald-400
+                            {% elif s.status == 'graduated' %}bg-blue-500/20 text-blue-400
+                            {% else %}bg-slate-700 text-slate-300{% endif %}">
+                            {{ 'Faol' if s.status == 'active' else ('Bitirgan' if s.status == 'graduated' else 'Nofaol') }}
+                        </span>
+                    </td>
+
+                    <!-- Actions -->
+                    <td class="px-6 py-4 text-right">
+                        <div class="flex items-center justify-end space-x-2">
+                            <!-- Profil -->
+                            <a href="{{ url_for('student_detail', id=s.id) }}" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-400 hover:text-white text-xs transition-colors" title="Profilni ko'rish">
+                                <i class="fas fa-eye"></i>
+                            </a>
+
+                            <!-- Baho qo'yish modalini ochish -->
+                            <button onclick="openQuickGradeModal('{{ s.id }}', '{{ s.first_name }} {{ s.last_name }}', '{{ s.course_title }}')" class="p-2 rounded-lg bg-blue-600/20 hover:bg-blue-600 text-cyan-400 hover:text-white text-xs transition-colors" title="Baho qo'yish">
+                                <i class="fas fa-plus"></i>
+                            </button>
+
+                            <!-- Delete (Superadmin / Admin only) -->
+                            {% if current_user.role in ['superadmin', 'admin'] %}
+                            <form method="POST" action="{{ url_for('student_delete', id=s.id) }}" onsubmit="return confirm('Haqiqatdan ham ushbu o\'quvchini o\'chirmoqchimisiz?');" class="inline">
+                                <button type="submit" class="p-2 rounded-lg bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white text-xs transition-colors" title="O'chirish">
+                                    <i class="fas fa-trash-can"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="px-6 py-12 text-center text-slate-400">
+                        <i class="fas fa-user-slash text-4xl mb-3 text-slate-600 block"></i>
+                        Hech qanday o'quvchi topilmadi.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    {% if total_pages > 1 %}
+    <div class="px-6 py-4 bg-slate-900/60 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div class="text-xs text-slate-400">
+            Jami <strong class="text-white">{{ total_students }}</strong> o'quvchidan <strong class="text-white">{{ ((current_page - 1) * 50) + 1 }}-{{ [current_page * 50, total_students]|min }}</strong> ko'rsatilmoqda
+        </div>
+        <div class="flex items-center space-x-1.5">
+            {% if current_page > 1 %}
+            <a href="{{ url_for('admin_students', page=current_page-1, search=search, course_id=selected_course, group_id=selected_group, status=selected_status, warning=warning_filter) }}" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300">
+                <i class="fas fa-chevron-left mr-1"></i> Oldingi
+            </a>
+            {% endif %}
+
+            <span class="px-3 py-1.5 rounded-lg bg-blue-600/20 text-cyan-300 font-mono text-xs font-bold border border-cyan-500/30">
+                {{ current_page }} / {{ total_pages }}
+            </span>
+
+            {% if current_page < total_pages %}
+            <a href="{{ url_for('admin_students', page=current_page+1, search=search, course_id=selected_course, group_id=selected_group, status=selected_status, warning=warning_filter) }}" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300">
+                Keyingi <i class="fas fa-chevron-right ml-1"></i>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- MODAL: ADD STUDENT -->
+<div id="add-student-modal" class="modal-container hidden fixed inset-0 z-50 modal-backdrop items-center justify-center p-4">
+    <div class="glass-panel bg-slate-900 border border-slate-700 max-w-2xl w-full rounded-3xl p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+        <button onclick="closeModal('add-student-modal')" class="absolute top-5 right-5 text-slate-400 hover:text-white text-xl">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <h3 class="text-xl font-bold text-white mb-1 flex items-center space-x-2">
+            <i class="fas fa-user-plus text-cyan-400"></i>
+            <span>Yangi O‘quvchi Qo‘shish</span>
+        </h3>
+        <p class="text-xs text-slate-400 mb-6">O'quvchi va ota-onasi ma'lumotlarini kiriting</p>
+
+        <form method="POST" action="{{ url_for('student_create') }}" class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Ism *</label>
+                    <input type="text" name="first_name" required placeholder="Aziz" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Familiya *</label>
+                    <input type="text" name="last_name" required placeholder="Karimov" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Telefon Raqami *</label>
+                    <input type="tel" name="phone" required placeholder="+998 90 123 45 67" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Tug‘ilgan Sana</label>
+                    <input type="date" name="birth_date" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+                </div>
+            </div>
+
+            <!-- Kurs, Guruh, Ustoz -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Kurs</label>
+                    <select name="course_id" class="w-full px-3 py-2.5 rounded-xl form-input-dark text-sm bg-slate-900">
+                        <option value="">Tanlang</option>
+                        {% for c in courses %}
+                            <option value="{{ c.id }}">{{ c.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Guruh</label>
+                    <select name="group_id" class="w-full px-3 py-2.5 rounded-xl form-input-dark text-sm bg-slate-900">
+                        <option value="">Tanlang</option>
+                        {% for g in groups %}
+                            <option value="{{ g.id }}">{{ g.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Ustoz</label>
+                    <select name="teacher_id" class="w-full px-3 py-2.5 rounded-xl form-input-dark text-sm bg-slate-900">
+                        <option value="">Tanlang</option>
+                        {% for t in teachers %}
+                            <option value="{{ t.id }}">{{ t.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Telegram Chat ID -->
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-1">
+                    <i class="fab fa-telegram text-cyan-400 mr-1"></i> O‘quvchi Telegram Chat ID
+                </label>
+                <input type="text" name="telegram_chat_id" placeholder="Masalan: 543210987" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+                <span class="text-[11px] text-slate-400 mt-1 block">Baholar va xabarlar ushbu chatga avtomatik yuboriladi.</span>
+            </div>
+
+            <!-- Parent Info Section -->
+            <div class="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
+                <div class="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center space-x-2">
+                    <i class="fas fa-user-group"></i>
+                    <span>Ota-onasi ma'lumotlari</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-400 mb-1">Ota-onasi ismi</label>
+                        <input type="text" name="parent_name" placeholder="Farhod Karimov" class="w-full px-3 py-2 rounded-xl form-input-dark text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-400 mb-1">Ota-onasi telefoni</label>
+                        <input type="tel" name="parent_phone" placeholder="+998 90 999 88 77" class="w-full px-3 py-2 rounded-xl form-input-dark text-sm">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-400 mb-1">
+                        <i class="fab fa-telegram text-purple-400 mr-1"></i> Ota-onasi Telegram Chat ID
+                    </label>
+                    <input type="text" name="parent_telegram_chat_id" placeholder="Masalan: 987654321" class="w-full px-3 py-2 rounded-xl form-input-dark text-sm">
+                    <span class="text-[10px] text-slate-400 mt-1 block">Farzandining baholari va ogohlantirishlar ushbu chatga ham nusxalanadi.</span>
+                </div>
+            </div>
+
+            <div class="pt-4 flex space-x-3">
+                <button type="button" onclick="closeModal('add-student-modal')" class="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-bold transition-all">
+                    Bekor qilish
+                </button>
+                <button type="submit" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-sm font-extrabold shadow-lg shadow-cyan-500/20 transition-all">
+                    Saqlash
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: QUICK GRADE ADD -->
+<div id="quick-grade-modal" class="modal-container hidden fixed inset-0 z-50 modal-backdrop items-center justify-center p-4">
+    <div class="glass-panel bg-slate-900 border border-slate-700 max-w-md w-full rounded-3xl p-6 shadow-2xl relative">
+        <button onclick="closeModal('quick-grade-modal')" class="absolute top-5 right-5 text-slate-400 hover:text-white text-xl">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <h3 class="text-xl font-bold text-white mb-1 flex items-center space-x-2">
+            <i class="fas fa-star text-amber-400"></i>
+            <span>Baho Qo‘yish</span>
+        </h3>
+        <p id="quick-grade-student-name" class="text-sm font-semibold text-cyan-400 mb-4"></p>
+
+        <form method="POST" action="{{ url_for('grade_create') }}" class="space-y-4">
+            <input type="hidden" name="student_id" id="quick-grade-student-id">
+
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Fan *</label>
+                <input type="text" name="subject" id="quick-grade-subject" required placeholder="Masalan: Matematika" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Baho (0-100) *</label>
+                    <input type="number" name="score" min="0" max="100" step="0.5" required placeholder="86" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm font-bold text-emerald-400">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Sana</label>
+                    <input type="date" name="assessment_date" value="{{ current_date or '' }}" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Nazorat turi</label>
+                <select name="assessment_type" class="w-full px-3 py-2.5 rounded-xl form-input-dark text-sm bg-slate-900">
+                    <option value="Test">Test</option>
+                    <option value="Nazorat ishi">Nazorat ishi</option>
+                    <option value="Uyga vazifa">Uyga vazifa</option>
+                    <option value="Og'zaki so'rov">Og'zaki so'rov</option>
+                    <option value="Mock Exam">Mock Exam</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Izoh</label>
+                <input type="text" name="comment" placeholder="Yaxshi natija / Mavzu to'liq o'rganilmagan" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+            </div>
+
+            <div class="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300 flex items-center space-x-2">
+                <i class="fab fa-telegram text-base text-cyan-400 shrink-0"></i>
+                <span>Baho saqlangach, o'quvchi va ota-onaga Telegram orqali avtomatik yuboriladi!</span>
+            </div>
+
+            <div class="pt-2 flex space-x-3">
+                <button type="button" onclick="closeModal('quick-grade-modal')" class="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-bold transition-all">
+                    Bekor qilish
+                </button>
+                <button type="submit" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-sm font-extrabold shadow-lg shadow-cyan-500/20 transition-all">
+                    Baho qo'yish
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openQuickGradeModal(id, name, course) {
+    document.getElementById('quick-grade-student-id').value = id;
+    document.getElementById('quick-grade-student-name').innerText = name;
+    document.getElementById('quick-grade-subject').value = course || '';
+    openModal('quick-grade-modal');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="uz" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ quiz.title }} — ANTIGRAVITY Viktorina</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
+    <!-- Top Sticky Header with Timer -->
+    <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-xl border-b border-slate-800 px-4 sm:px-8 py-4">
+        <div class="max-w-4xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <a href="{{ url_for('student_cabinet') }}" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors" title="Chiqish">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <div>
+                    <h1 class="text-sm sm:text-base font-black text-white truncate max-w-[240px] sm:max-w-md">
+                        {{ quiz.title }}
+                    </h1>
+                    <span class="text-[11px] text-cyan-400 font-semibold">{{ questions|length }} ta savol &bull; O'tish bali: {{ quiz.passing_score }}%</span>
+                </div>
+            </div>
+
+            <!-- Timer Countdown -->
+            <div class="flex items-center space-x-2 px-4 py-2 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-mono font-black text-lg shadow-lg shadow-amber-500/10">
+                <i class="fas fa-stopwatch animate-spin" style="animation-duration: 4s;"></i>
+                <span id="countdown-timer">15:00</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-4xl w-full mx-auto px-4 py-8">
+        <form id="quiz-form" action="{{ url_for('student_quiz_submit', quiz_id=quiz.id) }}" method="POST" class="space-y-8">
+            {% for q in questions %}
+            <div class="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-xl transition-all hover:border-slate-700">
+                <div class="flex items-start justify-between gap-4 mb-5">
+                    <span class="px-3 py-1 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 text-xs font-black">
+                        Savol #{{ loop.index }}
+                    </span>
+                    <span class="text-xs font-bold text-amber-400 flex items-center gap-1">
+                        <i class="fas fa-coins text-xs"></i>
+                        {{ q.points or 20 }} Ball
+                    </span>
+                </div>
+
+                <h3 class="text-base sm:text-lg font-bold text-white mb-6 leading-relaxed">
+                    {{ q.question_text }}
+                </h3>
+
+                <!-- Options -->
+                <div class="space-y-3">
+                    <label class="flex items-center p-4 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-cyan-500/50 hover:bg-slate-800/50 cursor-pointer transition-all group">
+                        <input type="radio" name="q_{{ q.id }}" value="A" required class="w-4 h-4 text-cyan-500 bg-slate-800 border-slate-700 focus:ring-cyan-500">
+                        <span class="ml-3 font-bold text-cyan-400 text-sm">A)</span>
+                        <span class="ml-2 text-sm text-slate-200 group-hover:text-white">{{ q.option_a }}</span>
+                    </label>
+
+                    <label class="flex items-center p-4 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-cyan-500/50 hover:bg-slate-800/50 cursor-pointer transition-all group">
+                        <input type="radio" name="q_{{ q.id }}" value="B" required class="w-4 h-4 text-cyan-500 bg-slate-800 border-slate-700 focus:ring-cyan-500">
+                        <span class="ml-3 font-bold text-cyan-400 text-sm">B)</span>
+                        <span class="ml-2 text-sm text-slate-200 group-hover:text-white">{{ q.option_b }}</span>
+                    </label>
+
+                    <label class="flex items-center p-4 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-cyan-500/50 hover:bg-slate-800/50 cursor-pointer transition-all group">
+                        <input type="radio" name="q_{{ q.id }}" value="C" required class="w-4 h-4 text-cyan-500 bg-slate-800 border-slate-700 focus:ring-cyan-500">
+                        <span class="ml-3 font-bold text-cyan-400 text-sm">C)</span>
+                        <span class="ml-2 text-sm text-slate-200 group-hover:text-white">{{ q.option_c }}</span>
+                    </label>
+
+                    <label class="flex items-center p-4 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-cyan-500/50 hover:bg-slate-800/50 cursor-pointer transition-all group">
+                        <input type="radio" name="q_{{ q.id }}" value="D" required class="w-4 h-4 text-cyan-500 bg-slate-800 border-slate-700 focus:ring-cyan-500">
+                        <span class="ml-3 font-bold text-cyan-400 text-sm">D)</span>
+                        <span class="ml-2 text-sm text-slate-200 group-hover:text-white">{{ q.option_d }}</span>
+                    </label>
+                </div>
+            </div>
+            {% endfor %}
+
+            <div class="p-6 rounded-3xl bg-slate-900/80 border border-slate-800 flex flex-wrap items-center justify-between gap-4">
+                <span class="text-xs text-slate-400">
+                    Barcha savollarni belgilaganingizga ishonch hosil qiling!
+                </span>
+                <button type="submit" class="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-black text-sm shadow-xl shadow-cyan-500/25 flex items-center gap-2 transition-all">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Testni Yakunlash & Natijani Ko'rish</span>
+                </button>
+            </div>
+        </form>
+    </main>
+
+    <script>
+        let timeLeft = {{ (quiz.time_limit_minutes or 15) * 60 }};
+        const timerDisplay = document.getElementById('countdown-timer');
+
+        const interval = setInterval(() => {
+            if (timeLeft <= 0) {
+                clearInterval(interval);
+                alert("Vaqtingiz tugadi! Test avtomatik tarzda topshiriladi.");
+                document.getElementById('quiz-form').submit();
+                return;
+            }
+            timeLeft--;
+            const mins = Math.floor(timeLeft / 60);
+            const secs = timeLeft % 60;
+            timerDisplay.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            if (timeLeft <= 60) {
+                timerDisplay.parentElement.classList.add('bg-red-500/20', 'text-red-400', 'border-red-500/40');
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

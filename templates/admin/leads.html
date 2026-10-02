@@ -1,0 +1,238 @@
+{% extends "admin/layout.html" %}
+
+{% block page_title %}
+    <i class="fas fa-inbox text-cyan-400 mr-2"></i> Saytdan Kelgan Arizalar (Leads)
+{% endblock %}
+
+{% block content %}
+<div class="glass-panel p-6 rounded-3xl border border-slate-800 mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+        <h2 class="text-xl font-bold text-white">Kelib tushgan arizalar</h2>
+        <p class="text-xs text-slate-400">Saytdan ariza qoldirgan o'quvchilarni to'g'ridan-to'g'ri darslarga va guruhga qo'shing</p>
+    </div>
+    <span class="px-3.5 py-1.5 rounded-xl bg-slate-800 text-xs font-bold text-cyan-400 border border-slate-700">
+        Jami: {{ leads|length }} ta ariza
+    </span>
+</div>
+
+<div class="glass-panel rounded-3xl border border-slate-800 overflow-hidden shadow-2xl">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-slate-300">
+            <thead class="text-xs uppercase bg-slate-900/90 text-slate-400 border-b border-slate-800">
+                <tr>
+                    <th class="px-6 py-4">Sana va Vaqt</th>
+                    <th class="px-6 py-4">Mijoz Ismi</th>
+                    <th class="px-6 py-4">Telefon</th>
+                    <th class="px-6 py-4">Tanlangan Kurs</th>
+                    <th class="px-6 py-4">Xabar / Izoh</th>
+                    <th class="px-6 py-4 text-center">Holat</th>
+                    <th class="px-6 py-4 text-right">Darsga Qo‘shish & Amallar</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/70">
+                {% for l in leads %}
+                <tr class="hover:bg-slate-800/40 transition-colors">
+                    <td class="px-6 py-4 text-xs font-mono text-slate-400 whitespace-nowrap">
+                        {{ l.created_at }}
+                    </td>
+                    <td class="px-6 py-4 font-bold text-white">
+                        {{ l.full_name }}
+                    </td>
+                    <td class="px-6 py-4">
+                        <a href="tel:{{ l.phone }}" class="text-cyan-400 font-bold hover:underline">{{ l.phone }}</a>
+                    </td>
+                    <td class="px-6 py-4 font-semibold text-slate-200">
+                        {{ l.course_name or 'Umumiy konsultatsiya' }}
+                    </td>
+                    <td class="px-6 py-4 text-xs text-slate-300 max-w-xs truncate">
+                        {{ l.message or '—' }}
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <form method="POST" action="{{ url_for('lead_status_update', id=l.id) }}">
+                            <select name="status" onchange="this.form.submit()" class="px-2.5 py-1 rounded-xl text-xs font-bold border 
+                                {% if l.status == 'new' %}bg-cyan-500/20 text-cyan-300 border-cyan-500/40
+                                {% elif l.status == 'contacted' %}bg-amber-500/20 text-amber-300 border-amber-500/40
+                                {% elif l.status == 'enrolled' %}bg-emerald-500/20 text-emerald-300 border-emerald-500/40
+                                {% else %}bg-slate-700 text-slate-400 border-slate-600{% endif %}">
+                                <option value="new" {% if l.status == 'new' %}selected{% endif %}>Yangi</option>
+                                <option value="contacted" {% if l.status == 'contacted' %}selected{% endif %}>Bog'lanildi</option>
+                                <option value="enrolled" {% if l.status == 'enrolled' %}selected{% endif %}>Yozildi</option>
+                                <option value="cancelled" {% if l.status == 'cancelled' %}selected{% endif %}>Bekor qilindi</option>
+                            </select>
+                        </form>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <div class="flex items-center justify-end space-x-2">
+                            {% if l.status == 'enrolled' %}
+                                <span class="px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20">
+                                    <i class="fas fa-user-check mr-1"></i> O‘quvchi bo‘lgan
+                                </span>
+                            {% else %}
+                                <button onclick="openEnrollLeadModal('{{ l.id }}', '{{ l.full_name }}', '{{ l.phone }}', '{{ l.course_name or '' }}')" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-bold shadow-md shadow-emerald-500/20 hover:scale-[1.02] transition-all flex items-center space-x-1.5">
+                                    <i class="fas fa-user-plus"></i>
+                                    <span>Qabul qilish & Darsga qo‘shish</span>
+                                </button>
+                            {% endif %}
+
+                            <form method="POST" action="{{ url_for('lead_delete', id=l.id) }}" onsubmit="return confirm('Arizani o\'chirishni tasdiqlaysizmi?');" class="inline">
+                                <button type="submit" class="p-1.5 text-slate-500 hover:text-red-400 transition-colors" title="O'chirish">
+                                    <i class="fas fa-trash-can"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="px-6 py-12 text-center text-slate-500">
+                        Hozircha saytdan kelgan arizalar mavjud emas.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- MODAL: CONVERT LEAD TO STUDENT & ASSIGN TO CLASS -->
+<div id="enroll-lead-modal" class="modal-container hidden fixed inset-0 z-50 modal-backdrop items-center justify-center p-4">
+    <div class="glass-panel bg-slate-900 border border-slate-700 max-w-2xl w-full rounded-3xl p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+        <button onclick="closeModal('enroll-lead-modal')" class="absolute top-5 right-5 text-slate-400 hover:text-white text-xl">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <h3 class="text-xl font-bold text-white mb-1 flex items-center space-x-2">
+            <i class="fas fa-user-check text-emerald-400"></i>
+            <span>Arizani Qabul Qilish va Darsga Qo‘shish</span>
+        </h3>
+        <p class="text-xs text-slate-400 mb-6">Mijoz arizasi tasdiqlanib, o'quvchilar safiga va guruh darsiga qo'shiladi</p>
+
+        <form id="enroll-lead-form" method="POST" action="" class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Ism *</label>
+                    <input type="text" name="first_name" id="lead-first-name" required class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Familiya *</label>
+                    <input type="text" name="last_name" id="lead-last-name" required class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Telefon Raqami *</label>
+                    <input type="tel" name="phone" id="lead-phone" required class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Tug‘ilgan Sana</label>
+                    <input type="date" name="birth_date" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+                </div>
+            </div>
+
+            <!-- Kurs, Guruh, Ustoz -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Kurs *</label>
+                    <select name="course_id" id="lead-course-select" required class="w-full px-3 py-2.5 rounded-xl form-input-dark text-sm bg-slate-900">
+                        <option value="">Kursni tanlang</option>
+                        {% for c in courses %}
+                            <option value="{{ c.id }}" data-title="{{ c.title }}">{{ c.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Dars Guruhi *</label>
+                    <select name="group_id" id="lead-group-select" required class="w-full px-3 py-2.5 rounded-xl form-input-dark text-sm bg-slate-900">
+                        <option value="">Guruhni tanlang</option>
+                        {% for g in groups %}
+                            <option value="{{ g.id }}" data-course-id="{{ g.course_id }}">{{ g.name }} ({{ g.schedule }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Ustoz *</label>
+                    <select name="teacher_id" id="lead-teacher-select" required class="w-full px-3 py-2.5 rounded-xl form-input-dark text-sm bg-slate-900">
+                        <option value="">Ustozni tanlang</option>
+                        {% for t in teachers %}
+                            <option value="{{ t.id }}">{{ t.full_name }} ({{ t.subject }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Telegram Chat ID -->
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-1">
+                    <i class="fab fa-telegram text-cyan-400 mr-1"></i> O‘quvchi Telegram Chat ID
+                </label>
+                <input type="text" name="telegram_chat_id" placeholder="Masalan: 543210987" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+                <span class="text-[11px] text-slate-400 mt-1 block">Kiritilsa, o'quvchiga "ANTIGRAVITY ga xush kelibsiz" xabari va dars bildirishnomalari boradi.</span>
+            </div>
+
+            <!-- Parent Info -->
+            <div class="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
+                <div class="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center space-x-2">
+                    <i class="fas fa-user-group"></i>
+                    <span>Ota-onasi ma'lumotlari</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-400 mb-1">Ota-onasi ismi</label>
+                        <input type="text" name="parent_name" placeholder="Ota-onasining F.I.SH" class="w-full px-3 py-2 rounded-xl form-input-dark text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-400 mb-1">Ota-onasi telefoni</label>
+                        <input type="tel" name="parent_phone" placeholder="+998 90 123 45 67" class="w-full px-3 py-2 rounded-xl form-input-dark text-sm">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-400 mb-1">
+                        <i class="fab fa-telegram text-purple-400 mr-1"></i> Ota-onasi Telegram Chat ID
+                    </label>
+                    <input type="text" name="parent_telegram_chat_id" placeholder="Masalan: 987654321" class="w-full px-3 py-2 rounded-xl form-input-dark text-sm">
+                </div>
+            </div>
+
+            <div class="pt-4 flex space-x-3">
+                <button type="button" onclick="closeModal('enroll-lead-modal')" class="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-bold transition-all">
+                    Bekor qilish
+                </button>
+                <button type="submit" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-500 text-white text-sm font-extrabold shadow-lg shadow-emerald-500/20 transition-all">
+                    <i class="fas fa-check mr-1.5"></i> Qabul qilish va Darsga biriktirish
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openEnrollLeadModal(id, fullName, phone, courseName) {
+    document.getElementById('enroll-lead-form').action = '/admin/leads/' + id + '/convert';
+    
+    // Split name into first and last name
+    const parts = fullName.trim().split(' ');
+    const firstName = parts[0] || '';
+    const lastName = parts.slice(1).join(' ') || (parts[0] ? parts[0] + 'ova' : '');
+    
+    document.getElementById('lead-first-name').value = firstName;
+    document.getElementById('lead-last-name').value = lastName;
+    document.getElementById('lead-phone').value = phone || '';
+
+    // Match course
+    const courseSelect = document.getElementById('lead-course-select');
+    if (courseName && courseSelect) {
+        for (let i = 0; i < courseSelect.options.length; i++) {
+            const opt = courseSelect.options[i];
+            const title = opt.getAttribute('data-title') || opt.text;
+            if (title.toLowerCase().includes(courseName.toLowerCase()) || courseName.toLowerCase().includes(title.toLowerCase())) {
+                courseSelect.selectedIndex = i;
+                break;
+            }
+        }
+    }
+
+    openModal('enroll-lead-modal');
+}
+</script>
+{% endblock %}

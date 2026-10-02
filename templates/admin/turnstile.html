@@ -1,0 +1,427 @@
+{% extends "admin/layout.html" %}
+
+{% block page_title %}
+    <span>🎫 Jonli QR Turniket & Kirish Terminali</span>
+{% endblock %}
+
+{% block content %}
+<!-- Top Metrics Row -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="glass-panel p-6 rounded-3xl border border-slate-800">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Bugungi Tashriflar</p>
+                <h3 class="text-3xl font-black text-white mt-1" id="todayEntriesCount">{{ today_entries_count }} ta</h3>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-xl">
+                <i class="fas fa-person-walking-arrow-right"></i>
+            </div>
+        </div>
+        <p class="text-xs text-slate-400 mt-3">Qayd etilgan kirishlar soni</p>
+    </div>
+
+    <div class="glass-panel p-6 rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 to-transparent">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Hozir Binoda</p>
+                <h3 class="text-3xl font-black text-emerald-400 mt-1" id="insideCount">{{ currently_inside }} nafar</h3>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl">
+                <i class="fas fa-building-user"></i>
+            </div>
+        </div>
+        <p class="text-xs text-emerald-300/80 mt-3">Akademiya hududidagi talabalar</p>
+    </div>
+
+    <div class="glass-panel p-6 rounded-3xl border border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-transparent">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-purple-400 uppercase tracking-wider">Vaqtida Kelish</p>
+                <h3 class="text-3xl font-black text-purple-400 mt-1">94.8%</h3>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-400 flex items-center justify-center text-xl">
+                <i class="fas fa-clock-rotate-left"></i>
+            </div>
+        </div>
+        <p class="text-xs text-slate-400 mt-3">Kechikmaganlar ko'rsatkichi</p>
+    </div>
+
+    <div class="glass-panel p-6 rounded-3xl border border-blue-500/20 bg-gradient-to-br from-blue-500/5 to-transparent">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-blue-400 uppercase tracking-wider">Terminal Holati</p>
+                <div class="flex items-center gap-2 mt-1">
+                    <span class="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span class="text-xl font-bold text-emerald-400">ONLAYN</span>
+                </div>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-xl">
+                <i class="fas fa-fingerprint"></i>
+            </div>
+        </div>
+        <p class="text-xs text-slate-400 mt-3">Turniket 1-blok faol</p>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <!-- Left Column: Live Terminal Scanner Kiosk (7 cols) -->
+    <div class="lg:col-span-7 space-y-6">
+        <div class="glass-panel p-6 lg:p-8 rounded-3xl border border-slate-800 relative overflow-hidden bg-gradient-to-b from-slate-900/90 to-slate-950/90">
+            <!-- Header bar with clock -->
+            <div class="flex items-center justify-between pb-6 border-b border-slate-800">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+                        <i class="fas fa-id-card-clip text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white">Turniket Kirish Kioski</h3>
+                        <p class="text-xs text-slate-400">QR-kod yoki Talaba ID raqamini kiriting</p>
+                    </div>
+                </div>
+
+                <!-- Digital Clock -->
+                <div class="text-right">
+                    <div id="liveClock" class="font-mono text-xl font-black text-cyan-400 tracking-wider">--:--:--</div>
+                    <div id="liveDate" class="text-[11px] text-slate-500 uppercase tracking-wider">--</div>
+                </div>
+            </div>
+
+            <!-- Scanner Input Box -->
+            <div class="mt-6 space-y-4">
+                <form id="turnstileScanForm" onsubmit="event.preventDefault(); processScan();" class="relative">
+                    <div class="relative flex items-center">
+                        <div class="absolute left-4 text-cyan-400 text-lg pointer-events-none">
+                            <i class="fas fa-barcode"></i>
+                        </div>
+                        <input type="text" id="scanInput" autofocus autocomplete="off"
+                            placeholder="QR yoki Talaba ID skan qiling (Masalan: 1 yoki ST-1002)..." 
+                            class="w-full bg-slate-950 border-2 border-cyan-500/60 focus:border-cyan-400 rounded-2xl pl-12 pr-32 py-4 text-white text-lg font-mono placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-cyan-500/20 transition-all shadow-inner">
+                        <button type="submit" class="absolute right-2 px-6 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-sm transition-all flex items-center gap-2">
+                            <span>Skan</span> <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Action Mode selector (Check In / Check Out) -->
+                <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-950/60 border border-slate-800/80">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Holat:</span>
+                        <div class="flex rounded-xl bg-slate-900 p-1 border border-slate-800">
+                            <button type="button" id="btnModeIn" onclick="setScanMode('in')" class="px-3.5 py-1.5 rounded-lg text-xs font-black transition-all bg-emerald-500 text-slate-950">
+                                🟢 KIRISH
+                            </button>
+                            <button type="button" id="btnModeOut" onclick="setScanMode('out')" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-all">
+                                🔴 CHIQISH
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="notifyParentCheck" checked class="accent-cyan-500 rounded cursor-pointer">
+                        <label for="notifyParentCheck" class="text-xs text-slate-300 cursor-pointer select-none">
+                            <i class="fab fa-telegram text-blue-400 mr-1"></i> Ota-onaga SMS / Bot
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Big Live Result Card -->
+            <div id="scanResultCard" class="mt-6 p-6 rounded-2xl border transition-all duration-300 bg-slate-950/70 border-slate-800 text-center flex flex-col items-center justify-center min-h-[260px]">
+                <div id="idleState" class="flex flex-col items-center">
+                    <div class="w-16 h-16 rounded-2xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-3xl mb-3 animate-pulse">
+                        <i class="fas fa-qrcode"></i>
+                    </div>
+                    <h4 class="text-base font-bold text-slate-300">Terminal Kutilmoqda</h4>
+                    <p class="text-xs text-slate-500 max-w-sm mt-1">O'quvchi kartasini skanerga yaqinlashtiring yoki klaviatura orqali ID raqamini kiriting.</p>
+                </div>
+
+                <div id="activeState" class="hidden w-full text-left space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span id="accessBadge" class="px-3 py-1 rounded-full text-xs font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                            ✅ RUXSAT BERILDI
+                        </span>
+                        <span id="resultTime" class="text-xs font-mono text-slate-400">12:34:56</span>
+                    </div>
+
+                    <div class="flex items-center gap-5">
+                        <div id="resultAvatar" class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-600 to-blue-600 flex items-center justify-center font-black text-2xl text-white border-2 border-cyan-400/50 shadow-lg shadow-cyan-500/20">
+                            A
+                        </div>
+                        <div>
+                            <h3 id="resultName" class="text-xl font-black text-white">Aliyev Valijon</h3>
+                            <p id="resultGroup" class="text-sm font-semibold text-cyan-400">Python Backend - Pro (G-12)</p>
+                            <p id="resultInfo" class="text-xs text-slate-400 mt-0.5">Telefon: +998 90 123 45 67 &bull; ID: #1002</p>
+                        </div>
+                    </div>
+
+                    <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between text-xs">
+                        <span class="text-slate-400 flex items-center gap-2">
+                            <i class="fas fa-shield-check text-emerald-400"></i> Davomat tizimida belgilandi
+                        </span>
+                        <span id="telegramStatusBadge" class="text-blue-400 font-semibold flex items-center gap-1">
+                            <i class="fab fa-telegram"></i> Telegram habar yuborildi
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Select Row for Testing -->
+            <div class="mt-6 pt-4 border-t border-slate-800/80">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">Tezkor sinov (O'quvchini tanlang):</span>
+                <div class="flex flex-wrap gap-2">
+                    {% for st in sample_students[:6] %}
+                    <button type="button" onclick="quickScan('{{ st.id }}')" class="px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-cyan-500/20 hover:border-cyan-500/40 border border-slate-700 text-xs text-slate-300 transition-all">
+                        {{ st.full_name }} (ID: {{ st.id }})
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Today's Live Attendance Stream (5 cols) -->
+    <div class="lg:col-span-5 space-y-6">
+        <div class="glass-panel p-6 rounded-3xl border border-slate-800">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fas fa-list-check text-cyan-400"></i> Jonli O'tishlar Tarixi (Bugun)
+                </h3>
+                <span class="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">Jonli oqim</span>
+            </div>
+
+            <div class="space-y-3 max-h-[580px] overflow-y-auto pr-1" id="liveFeedContainer">
+                {% for log in recent_scans %}
+                <div class="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800/80 flex items-center justify-between text-xs">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-xl {% if log.scan_type == 'out' %}bg-rose-500/10 text-rose-400 border border-rose-500/20{% else %}bg-emerald-500/10 text-emerald-400 border border-emerald-500/20{% endif %} flex items-center justify-center font-bold text-xs">
+                            <i class="fas {% if log.scan_type == 'out' %}fa-arrow-right-from-bracket{% else %}fa-arrow-right-to-bracket{% endif %}"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-white">{{ log.student_name }}</h4>
+                            <p class="text-[11px] text-slate-400">{{ log.group_name or 'Umumiy' }}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="font-mono text-slate-300 block font-semibold">{{ log.scan_time }}</span>
+                        <span class="text-[10px] {% if log.scan_type == 'out' %}text-rose-400{% else %}text-emerald-400{% endif %} font-bold uppercase">
+                            {{ 'Chiqish' if log.scan_type == 'out' else 'Kirish' }}
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Web Audio & Scanner Controller Script -->
+<script>
+    let currentMode = 'in';
+    let audioCtx = null;
+
+    // Clock
+    function updateClock() {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('uz-UZ', { hour12: false });
+        const dateStr = now.toLocaleDateString('uz-UZ', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+        
+        const cEl = document.getElementById('liveClock');
+        const dEl = document.getElementById('liveDate');
+        if (cEl) cEl.innerText = timeStr;
+        if (dEl) dEl.innerText = dateStr;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    function setScanMode(mode) {
+        currentMode = mode;
+        const bIn = document.getElementById('btnModeIn');
+        const bOut = document.getElementById('btnModeOut');
+        if (mode === 'in') {
+            bIn.className = "px-3.5 py-1.5 rounded-lg text-xs font-black transition-all bg-emerald-500 text-slate-950";
+            bOut.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-all";
+        } else {
+            bOut.className = "px-3.5 py-1.5 rounded-lg text-xs font-black transition-all bg-rose-500 text-white";
+            bIn.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-all";
+        }
+        document.getElementById('scanInput').focus();
+    }
+
+    // Zero-asset Web Audio Synthesizer for Access Beeps
+    function playSuccessChime() {
+        try {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const now = audioCtx.currentTime;
+            
+            // First chime tone (high frequency note)
+            const osc1 = audioCtx.createOscillator();
+            const gain1 = audioCtx.createGain();
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(587.33, now); // D5
+            gain1.gain.setValueAtTime(0.15, now);
+            gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+            osc1.connect(gain1);
+            gain1.connect(audioCtx.destination);
+            osc1.start(now);
+            osc1.stop(now + 0.25);
+
+            // Second harmonious tone (F#5)
+            const osc2 = audioCtx.createOscillator();
+            const gain2 = audioCtx.createGain();
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(880.00, now + 0.08); // A5
+            gain2.gain.setValueAtTime(0.2, now + 0.08);
+            gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+            osc2.connect(gain2);
+            gain2.connect(audioCtx.destination);
+            osc2.start(now + 0.08);
+            osc2.stop(now + 0.4);
+        } catch(e) {
+            console.warn('Audio context unavailable:', e);
+        }
+    }
+
+    function playErrorBuzz() {
+        try {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, now);
+            gain.gain.setValueAtTime(0.25, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.35);
+        } catch(e) {
+            console.warn('Audio context unavailable:', e);
+        }
+    }
+
+    function quickScan(studentId) {
+        document.getElementById('scanInput').value = studentId;
+        processScan();
+    }
+
+    async function processScan() {
+        const input = document.getElementById('scanInput');
+        const studentQuery = input.value.trim();
+        if (!studentQuery) return;
+
+        const notifyParent = document.getElementById('notifyParentCheck').checked;
+
+        try {
+            const res = await fetch('/api/turnstile/scan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    student_query: studentQuery,
+                    mode: currentMode,
+                    notify_parent: notifyParent
+                })
+            });
+
+            const data = await res.json();
+            if (res.ok && data.success) {
+                playSuccessChime();
+                renderScanSuccess(data);
+                input.value = '';
+                input.focus();
+            } else {
+                playErrorBuzz();
+                renderScanError(data.error || "O'quvchi topilmadi yoki xatolik yuz berdi");
+                input.select();
+            }
+        } catch (err) {
+            playErrorBuzz();
+            renderScanError("Server bilan aloqa uzildi");
+        }
+    }
+
+    function renderScanSuccess(data) {
+        const idle = document.getElementById('idleState');
+        const active = document.getElementById('activeState');
+        const card = document.getElementById('scanResultCard');
+
+        idle.classList.add('hidden');
+        active.classList.remove('hidden');
+
+        card.className = "mt-6 p-6 rounded-2xl border transition-all duration-300 bg-emerald-950/20 border-emerald-500/50 text-left";
+
+        document.getElementById('resultName').innerText = data.student.full_name;
+        document.getElementById('resultAvatar').innerText = data.student.full_name.charAt(0);
+        document.getElementById('resultGroup').innerText = data.student.group_name || 'Umumiy oqim';
+        document.getElementById('resultInfo').innerText = `Telefon: ${data.student.phone || '—'} • ID: #${data.student.id}`;
+        document.getElementById('resultTime').innerText = data.time;
+        
+        const badge = document.getElementById('accessBadge');
+        if (data.mode === 'out') {
+            badge.innerText = "🔴 BARKAMOL CHIQISH QAYD ETILDI";
+            badge.className = "px-3 py-1 rounded-full text-xs font-black bg-rose-500/20 text-rose-400 border border-rose-500/40";
+        } else {
+            badge.innerText = "✅ RUXSAT BERILDI - XUSH KELIBSIZ";
+            badge.className = "px-3 py-1 rounded-full text-xs font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/40";
+        }
+
+        // Add to live feed at top
+        const feed = document.getElementById('liveFeedContainer');
+        const itemHtml = `
+            <div class="p-3.5 rounded-2xl bg-slate-900/90 border border-cyan-500/30 flex items-center justify-between text-xs animate-fade-in">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-xl ${data.mode === 'out' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'} flex items-center justify-center font-bold text-xs">
+                        <i class="fas ${data.mode === 'out' ? 'fa-arrow-right-from-bracket' : 'fa-arrow-right-to-bracket'}"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-white">${data.student.full_name}</h4>
+                        <p class="text-[11px] text-slate-400">${data.student.group_name || 'Umumiy'}</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <span class="font-mono text-cyan-400 block font-semibold">${data.time}</span>
+                    <span class="text-[10px] ${data.mode === 'out' ? 'text-rose-400' : 'text-emerald-400'} font-bold uppercase">
+                        ${data.mode === 'out' ? 'Chiqish' : 'Kirish'}
+                    </span>
+                </div>
+            </div>
+        `;
+        feed.insertAdjacentHTML('afterbegin', itemHtml);
+
+        // Update counts
+        const entEl = document.getElementById('todayEntriesCount');
+        if (entEl && data.today_entries_count) entEl.innerText = data.today_entries_count + " ta";
+        const insEl = document.getElementById('insideCount');
+        if (insEl && data.currently_inside !== undefined) insEl.innerText = data.currently_inside + " nafar";
+    }
+
+    function renderScanError(message) {
+        const card = document.getElementById('scanResultCard');
+        card.className = "mt-6 p-6 rounded-2xl border transition-all duration-300 bg-rose-950/30 border-rose-500/50 text-center flex flex-col items-center justify-center min-h-[260px]";
+        
+        const idle = document.getElementById('idleState');
+        const active = document.getElementById('activeState');
+        idle.classList.remove('hidden');
+        active.classList.add('hidden');
+
+        idle.innerHTML = `
+            <div class="w-16 h-16 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center text-3xl mb-3">
+                <i class="fas fa-triangle-exclamation"></i>
+            </div>
+            <h4 class="text-base font-bold text-rose-300">Kirish Rad Etildi</h4>
+            <p class="text-xs text-rose-200/80 max-w-sm mt-1">${message}</p>
+        `;
+
+        setTimeout(() => {
+            idle.innerHTML = `
+                <div class="w-16 h-16 rounded-2xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-3xl mb-3 animate-pulse">
+                    <i class="fas fa-qrcode"></i>
+                </div>
+                <h4 class="text-base font-bold text-slate-300">Terminal Kutilmoqda</h4>
+                <p class="text-xs text-slate-500 max-w-sm mt-1">O'quvchi kartasini skanerga yaqinlashtiring yoki klaviatura orqali ID raqamini kiriting.</p>
+            `;
+            card.className = "mt-6 p-6 rounded-2xl border transition-all duration-300 bg-slate-950/70 border-slate-800 text-center flex flex-col items-center justify-center min-h-[260px]";
+        }, 3500);
+    }
+</script>
+{% endblock %}

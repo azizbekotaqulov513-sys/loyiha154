@@ -1,0 +1,191 @@
+{% extends "admin/layout.html" %}
+
+{% block page_title %}
+    <i class="fas fa-book-bookmark text-cyan-400 mr-2"></i> Kurslar Boshqaruvi
+{% endblock %}
+
+{% block content %}
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+    <div>
+        <h2 class="text-xl font-bold text-white">Ta'lim Yo'nalishlari</h2>
+        <p class="text-xs text-slate-400">Markazdagi barcha faol kurslar va dasturlar</p>
+    </div>
+    {% if current_user.role in ['superadmin', 'admin'] %}
+    <button onclick="openModal('add-course-modal')" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs font-extrabold shadow-lg shadow-cyan-500/20 transition-all">
+        <i class="fas fa-plus-circle mr-1.5"></i> Yangi kurs ochish
+    </button>
+    {% endif %}
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for c in courses %}
+    <div class="glass-panel p-6 rounded-3xl border border-slate-800 flex flex-col justify-between group">
+        <div>
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-xs font-bold px-3 py-1 rounded-full bg-slate-800 text-cyan-300 border border-slate-700">
+                    {{ c.level }}
+                </span>
+                <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full {% if c.active == 1 %}bg-emerald-500/20 text-emerald-400{% else %}bg-slate-700 text-slate-400{% endif %}">
+                    {{ 'Faol' if c.active == 1 else 'To‘xtatilgan' }}
+                </span>
+            </div>
+
+            <h3 class="text-xl font-bold text-white mb-2 group-hover:text-cyan-400 transition-colors">{{ c.title }}</h3>
+            <p class="text-xs text-slate-300 leading-relaxed mb-6">{{ c.description }}</p>
+
+            <div class="space-y-2 py-4 border-t border-slate-800/80 text-xs">
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Davomiyligi:</span>
+                    <span class="font-bold text-white">{{ c.duration }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Narxi:</span>
+                    <span class="font-bold text-emerald-400">{{ c.price }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">O'quvchilar soni:</span>
+                    <span class="font-bold text-cyan-300">{{ c.students_count }} nafar</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Guruhlar soni:</span>
+                    <span class="font-bold text-purple-300">{{ c.groups_count }} ta</span>
+                </div>
+            </div>
+        </div>
+
+        {% if current_user.role in ['superadmin', 'admin'] %}
+        <div class="pt-4 border-t border-slate-800/80 flex items-center justify-between">
+            <button onclick="openEditCourse('{{ c.id }}', '{{ c.title }}', '{{ c.level }}', '{{ c.duration }}', '{{ c.price }}', '{{ c.description }}', '{{ c.active }}')" class="text-xs font-bold text-cyan-400 hover:text-cyan-300">
+                <i class="fas fa-pen-to-square mr-1"></i> Tahrirlash
+            </button>
+            <form method="POST" action="{{ url_for('course_delete', id=c.id) }}" onsubmit="return confirm('Kursni o\'chirmoqchimisiz?');" class="inline">
+                <button type="submit" class="text-xs text-slate-500 hover:text-red-400 transition-colors">
+                    <i class="fas fa-trash-can mr-1"></i> O'chirish
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+<!-- MODAL: ADD COURSE -->
+<div id="add-course-modal" class="modal-container hidden fixed inset-0 z-50 modal-backdrop items-center justify-center p-4">
+    <div class="glass-panel bg-slate-900 border border-slate-700 max-w-lg w-full rounded-3xl p-8 shadow-2xl relative">
+        <button onclick="closeModal('add-course-modal')" class="absolute top-5 right-5 text-slate-400 hover:text-white text-xl">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <h3 class="text-xl font-bold text-white mb-6 flex items-center space-x-2">
+            <i class="fas fa-book-medical text-cyan-400"></i>
+            <span>Yangi Kurs Qo‘shish</span>
+        </h3>
+
+        <form method="POST" action="{{ url_for('course_create') }}" class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Kurs Nomi *</label>
+                <input type="text" name="title" required placeholder="Masalan: SAT Matematika" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Daraja *</label>
+                    <input type="text" name="level" required placeholder="Beginner - Advanced" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Davomiyligi *</label>
+                    <input type="text" name="duration" required placeholder="6 oy" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Oylik To'lov *</label>
+                <input type="text" name="price" required placeholder="700,000 so'm / oy" class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Kurs Tavsifi *</label>
+                <textarea name="description" rows="3" required placeholder="Kurs haqida qisqacha ma'lumot..." class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm"></textarea>
+            </div>
+
+            <div class="pt-2 flex space-x-3">
+                <button type="button" onclick="closeModal('add-course-modal')" class="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-bold transition-all">
+                    Bekor qilish
+                </button>
+                <button type="submit" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-sm font-extrabold shadow-lg shadow-cyan-500/20 transition-all">
+                    Yaratish
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: EDIT COURSE -->
+<div id="edit-course-modal" class="modal-container hidden fixed inset-0 z-50 modal-backdrop items-center justify-center p-4">
+    <div class="glass-panel bg-slate-900 border border-slate-700 max-w-lg w-full rounded-3xl p-8 shadow-2xl relative">
+        <button onclick="closeModal('edit-course-modal')" class="absolute top-5 right-5 text-slate-400 hover:text-white text-xl">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <h3 class="text-xl font-bold text-white mb-6 flex items-center space-x-2">
+            <i class="fas fa-pen-to-square text-cyan-400"></i>
+            <span>Kursni Tahrirlash</span>
+        </h3>
+
+        <form id="edit-course-form" method="POST" action="" class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Kurs Nomi *</label>
+                <input type="text" name="title" id="edit-course-title" required class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Daraja *</label>
+                    <input type="text" name="level" id="edit-course-level" required class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Davomiyligi *</label>
+                    <input type="text" name="duration" id="edit-course-duration" required class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Oylik To'lov *</label>
+                <input type="text" name="price" id="edit-course-price" required class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Kurs Tavsifi *</label>
+                <textarea name="description" id="edit-course-desc" rows="3" required class="w-full px-4 py-2.5 rounded-xl form-input-dark text-sm"></textarea>
+            </div>
+
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" name="active" id="edit-course-active" value="1" class="w-4 h-4 rounded text-blue-600 bg-slate-900 border-slate-700">
+                <label for="edit-course-active" class="text-xs font-bold text-slate-300">Faol kurs</label>
+            </div>
+
+            <div class="pt-2 flex space-x-3">
+                <button type="button" onclick="closeModal('edit-course-modal')" class="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-bold transition-all">
+                    Bekor qilish
+                </button>
+                <button type="submit" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-sm font-extrabold shadow-lg shadow-cyan-500/20 transition-all">
+                    Saqlash
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openEditCourse(id, title, level, duration, price, desc, active) {
+    document.getElementById('edit-course-form').action = '/admin/courses/' + id + '/update';
+    document.getElementById('edit-course-title').value = title;
+    document.getElementById('edit-course-level').value = level;
+    document.getElementById('edit-course-duration').value = duration;
+    document.getElementById('edit-course-price').value = price;
+    document.getElementById('edit-course-desc').value = desc;
+    document.getElementById('edit-course-active').checked = (active == 1 || active == '1');
+    openModal('edit-course-modal');
+}
+</script>
+{% endblock %}

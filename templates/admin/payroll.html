@@ -1,0 +1,151 @@
+{% extends "admin/layout.html" %}
+
+{% block page_title %}
+    <span>👨‍🏫 Ustozlar Oylik Maoshi & KPI Payroll Tizimi</span>
+{% endblock %}
+
+{% block content %}
+<!-- Top Metrics Row -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="glass-panel p-6 rounded-3xl border border-slate-800">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Jami Oylik Fond</p>
+                <h3 class="text-3xl font-black text-white mt-1">{{ total_fund|format_currency }}</h3>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-xl">
+                <i class="fas fa-calculator"></i>
+            </div>
+        </div>
+        <p class="text-xs text-slate-400 mt-3">{{ current_month }} hisob-kitobi bo'yicha</p>
+    </div>
+
+    <div class="glass-panel p-6 rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 to-transparent">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">To'langan Maoshlar</p>
+                <h3 class="text-3xl font-black text-emerald-400 mt-1">{{ paid_total|format_currency }}</h3>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl">
+                <i class="fas fa-check-double"></i>
+            </div>
+        </div>
+        <p class="text-xs text-emerald-300/80 mt-3">Bank orqali o'tkazilgan</p>
+    </div>
+
+    <div class="glass-panel p-6 rounded-3xl border border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-amber-400 uppercase tracking-wider">To'lanishi Kutilayotgan</p>
+                <h3 class="text-3xl font-black text-amber-400 mt-1">{{ pending_total|format_currency }}</h3>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-xl">
+                <i class="fas fa-hourglass-half"></i>
+            </div>
+        </div>
+        <p class="text-xs text-amber-300/80 mt-3">Kassadan to'lovga tayyor</p>
+    </div>
+
+    <div class="glass-panel p-6 rounded-3xl border border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-transparent">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-purple-400 uppercase tracking-wider">Ustozlar Soni</p>
+                <h3 class="text-3xl font-black text-purple-400 mt-1">{{ payrolls|length }} nafar</h3>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-400 flex items-center justify-center text-xl">
+                <i class="fas fa-chalkboard-user"></i>
+            </div>
+        </div>
+        <p class="text-xs text-purple-300/80 mt-3">Pedagogik jamoa tarkibi</p>
+    </div>
+</div>
+
+<!-- Header Controls -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div class="flex items-center gap-3">
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Oylik Davr:</span>
+        <select onchange="location.href='?month='+this.value" class="bg-slate-900 border border-slate-700 rounded-2xl px-4 py-2 text-sm text-white font-mono focus:border-cyan-500">
+            <option value="2026-09" {% if current_month == '2026-09' %}selected{% endif %}>Sentyabr 2026</option>
+            <option value="2026-10" {% if current_month == '2026-10' %}selected{% endif %}>Oktyabr 2026</option>
+        </select>
+    </div>
+</div>
+
+<!-- Payroll Table -->
+<div class="glass-panel rounded-3xl border border-slate-800 overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-slate-300">
+            <thead class="bg-slate-950/60 text-slate-400 text-xs font-bold uppercase tracking-wider border-b border-slate-800">
+                <tr>
+                    <th class="p-4 pl-6">O'qituvchi / Ustoz</th>
+                    <th class="p-4">Fan & Yo'nalish</th>
+                    <th class="p-4">Asosiy Oklad</th>
+                    <th class="p-4">O'quvchilar Bonusi</th>
+                    <th class="p-4">KPI Sifat Bonusi</th>
+                    <th class="p-4">Jami Oylik Summasi</th>
+                    <th class="p-4">Holati</th>
+                    <th class="p-4 pr-6 text-right">Amallar</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/60">
+                {% for p in payrolls %}
+                <tr class="hover:bg-slate-800/30 transition-colors">
+                    <td class="p-4 pl-6">
+                        <div class="font-bold text-white">{{ p.teacher_name }}</div>
+                        <span class="text-xs text-slate-500">{{ p.teacher_phone or 'Tel kiritilmagan' }}</span>
+                    </td>
+                    <td class="p-4">
+                        <span class="px-2.5 py-1 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">
+                            {{ p.teacher_subject }}
+                        </span>
+                    </td>
+                    <td class="p-4 font-mono text-slate-300">
+                        {{ p.base_salary|format_currency }}
+                    </td>
+                    <td class="p-4 font-mono text-cyan-400 font-semibold">
+                        +{{ p.student_bonus|format_currency }}
+                    </td>
+                    <td class="p-4 font-mono text-amber-400 font-semibold">
+                        +{{ p.kpi_bonus|format_currency }}
+                    </td>
+                    <td class="p-4">
+                        <span class="font-mono font-black text-emerald-400 text-base">
+                            {{ p.total_amount|format_currency }}
+                        </span>
+                    </td>
+                    <td class="p-4">
+                        {% if p.status == 'paid' %}
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 w-max">
+                                <i class="fas fa-check text-[10px]"></i> To'langan
+                            </span>
+                            <span class="text-[10px] text-slate-500 block mt-0.5">{{ p.paid_at[:16] if p.paid_at else '' }}</span>
+                        {% else %}
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1.5 w-max">
+                                <i class="fas fa-clock text-[10px]"></i> Kutilmoqda
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="p-4 pr-6 text-right">
+                        {% if p.status != 'paid' %}
+                        <form action="{{ url_for('admin_payroll_pay', record_id=p.id) }}" method="POST" class="inline" onsubmit="return confirm('Haqiqatan ham ushbu maosh to'lovini tasdiqlaysizmi?');">
+                            <button type="submit" class="px-3.5 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold transition-all inline-flex items-center gap-1.5">
+                                <i class="fas fa-money-bill-transfer"></i> To'lash
+                            </button>
+                        </form>
+                        {% else %}
+                        <button type="button" onclick="alert('Maosh to'liq to'langan. Izoh: {{ p.notes }}');" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all inline-flex items-center gap-1.5">
+                            <i class="fas fa-file-invoice"></i> Slip
+                        </button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="p-10 text-center text-slate-500">Ushbu oy uchun maoshlar qaydnomasi topilmadi</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

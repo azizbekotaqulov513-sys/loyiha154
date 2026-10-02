@@ -1,0 +1,234 @@
+{% extends "admin/layout.html" %}
+
+{% block page_title %}
+    <span>📞 Virtual Call-Center & Qo'ng'iroqlar CRM</span>
+{% endblock %}
+
+{% block content %}
+<!-- Top Metrics Row -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="glass-panel p-6 rounded-3xl border border-slate-800">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Jami Qo'ng'iroqlar</p>
+                <h3 class="text-3xl font-black text-white mt-1">{{ calls|length }} ta</h3>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-xl">
+                <i class="fas fa-phone-volume"></i>
+            </div>
+        </div>
+        <p class="text-xs text-slate-400 mt-3">Qayd etilgan suhbatlar</p>
+    </div>
+
+    <div class="glass-panel p-6 rounded-3xl border border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-amber-400 uppercase tracking-wider">Qayta Qo'ng'iroqlar</p>
+                <h3 class="text-3xl font-black text-amber-400 mt-1">{{ followups_count }} ta</h3>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-xl">
+                <i class="fas fa-clock-rotate-left"></i>
+            </div>
+        </div>
+        <p class="text-xs text-amber-300/80 mt-3">Rejalashtirilgan follow-up</p>
+    </div>
+
+    <div class="glass-panel p-6 rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/5 to-transparent">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-cyan-400 uppercase tracking-wider">Sinov Darsiga Yozildi</p>
+                <h3 class="text-3xl font-black text-cyan-400 mt-1">{{ trial_booked_count }} ta</h3>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-xl">
+                <i class="fas fa-user-check"></i>
+            </div>
+        </div>
+        <p class="text-xs text-cyan-300/80 mt-3">Bepul sinov darsi kutilmoqda</p>
+    </div>
+
+    <div class="glass-panel p-6 rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 to-transparent">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Qabul Qilindi (Enrolled)</p>
+                <h3 class="text-3xl font-black text-emerald-400 mt-1">{{ enrolled_count }} ta</h3>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl">
+                <i class="fas fa-graduation-cap"></i>
+            </div>
+        </div>
+        <p class="text-xs text-emerald-300/80 mt-3">Shartnoma imzolanganlar</p>
+    </div>
+</div>
+
+<!-- Header & Add Button -->
+<div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+        <i class="fas fa-headset text-cyan-400"></i>
+        Qo'ng'iroqlar va Murojaatlar Jurnali
+    </h3>
+
+    <button onclick="openModal('new-call-modal')" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-500 hover:from-blue-500 hover:to-teal-400 text-white font-black text-sm shadow-lg shadow-cyan-500/25 flex items-center gap-2 transition-all">
+        <i class="fas fa-phone-plus"></i>
+        <span>Yangi Qo'ng'iroq Qayd Qilish</span>
+    </button>
+</div>
+
+<!-- Calls Table -->
+<div class="glass-panel p-6 rounded-3xl border border-slate-800">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-slate-300">
+            <thead class="text-xs uppercase bg-slate-900/80 text-slate-400 border-b border-slate-800">
+                <tr>
+                    <th class="py-3 px-4">Turi / Sana</th>
+                    <th class="py-3 px-4">Mijoz / O'quvchi</th>
+                    <th class="py-3 px-4">Telefon</th>
+                    <th class="py-3 px-4">Holat / Natija</th>
+                    <th class="py-3 px-4">Davomiyligi</th>
+                    <th class="py-3 px-4">Izoh / Qayta Qo'ng'iroq</th>
+                    <th class="py-3 px-4">Mas'ul</th>
+                    <th class="py-3 px-4 text-center">Tezkor Amal</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/60 text-xs">
+                {% for c in calls %}
+                <tr class="hover:bg-slate-800/30 transition-colors">
+                    <td class="py-3.5 px-4">
+                        <div class="flex items-center space-x-2">
+                            <span class="p-1.5 rounded-lg {% if c.call_type == 'incoming' %}bg-emerald-500/20 text-emerald-400{% else %}bg-blue-500/20 text-blue-400{% endif %}">
+                                <i class="fas fa-arrow-{% if c.call_type == 'incoming' %}down-left{% else %}up-right{% endif %}"></i>
+                            </span>
+                            <div>
+                                <span class="font-bold text-white block">{{ 'Kiruvchi' if c.call_type == 'incoming' else 'Chiquvchi' }}</span>
+                                <span class="text-[10px] text-slate-500 font-mono">{{ c.created_at }}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-3.5 px-4 font-bold text-white">
+                        {{ c.student_name }}
+                    </td>
+                    <td class="py-3.5 px-4 font-mono text-cyan-400">
+                        <a href="tel:{{ c.phone }}" class="hover:underline">{{ c.phone }}</a>
+                    </td>
+                    <td class="py-3.5 px-4">
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase
+                            {% if c.status == 'trial_booked' %}bg-cyan-500/20 text-cyan-300 border border-cyan-500/40
+                            {% elif c.status == 'enrolled' %}bg-emerald-500/20 text-emerald-400 border border-emerald-500/40
+                            {% elif c.status == 'interested' %}bg-blue-500/20 text-blue-300 border border-blue-500/40
+                            {% elif c.status == 'no_answer' %}bg-amber-500/20 text-amber-400 border border-amber-500/40
+                            {% elif c.status == 'rejected' %}bg-red-500/20 text-red-400 border border-red-500/40
+                            {% else %}bg-slate-800 text-slate-400{% endif %}">
+                            {% if c.status == 'trial_booked' %}Sinov Darsiga Yozildi
+                            {% elif c.status == 'enrolled' %}Qabul Qilindi
+                            {% elif c.status == 'interested' %}Qiziqmoqda
+                            {% elif c.status == 'no_answer' %}Javob Bermadi
+                            {% elif c.status == 'rejected' %}Rad Etdi
+                            {% else %}{{ c.status }}{% endif %}
+                        </span>
+                    </td>
+                    <td class="py-3.5 px-4 font-mono text-slate-400">
+                        {{ c.duration_seconds // 60 }}:{{ "%02d" % (c.duration_seconds % 60) }} daq
+                    </td>
+                    <td class="py-3.5 px-4 max-w-[200px]">
+                        <p class="text-slate-300 truncate" title="{{ c.notes }}">{{ c.notes or '—' }}</p>
+                        {% if c.callback_date %}
+                        <span class="text-[10px] text-amber-400 font-mono block mt-0.5">
+                            <i class="fas fa-bell mr-1"></i> Qayta: {{ c.callback_date }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="py-3.5 px-4 text-slate-400">
+                        {{ c.created_by or 'Admin' }}
+                    </td>
+                    <td class="py-3.5 px-4 text-center">
+                        <form action="{{ url_for('admin_call_send_info', id=c.id) }}" method="POST" class="inline-block" onsubmit="return confirm('Mijozga Telegram orqali markaz taqdimotini yubormoqchimisiz?');">
+                            <button type="submit" title="Telegramdan ma'lumot yuborish" class="p-2 rounded-xl bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/30 transition-all">
+                                <i class="fab fa-telegram"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center py-10 text-slate-500">
+                        Hozircha qo'ng'iroqlar tarixi mavjud emas.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal: New Call -->
+<div id="new-call-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm hidden p-4">
+    <div class="glass-panel w-full max-w-lg p-6 rounded-3xl border border-slate-800 shadow-2xl">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-5">
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                <i class="fas fa-phone-volume text-blue-400"></i>
+                Yangi Qo'ng'iroq Qayd Qilish
+            </h3>
+            <button onclick="closeModal('new-call-modal')" class="text-slate-400 hover:text-white text-lg">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <form action="{{ url_for('admin_call_new') }}" method="POST" class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1.5">Mijoz / O'quvchi Ismi *</label>
+                    <input type="text" name="student_name" required placeholder="Masalan: Jasur Qosimov" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white text-sm focus:outline-none focus:border-cyan-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1.5">Telefon Raqami *</label>
+                    <input type="text" name="phone" required placeholder="+998 90 123 45 67" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white text-sm focus:outline-none focus:border-cyan-500">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1.5">Qo'ng'iroq Turi</label>
+                    <select name="call_type" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white text-sm focus:outline-none focus:border-cyan-500">
+                        <option value="outgoing">Chiquvchi (Menejer qo'ng'irog'i)</option>
+                        <option value="incoming">Kiruvchi (Mijoz qo'ng'irog'i)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1.5">Suhbat Natijasi *</label>
+                    <select name="status" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white text-sm focus:outline-none focus:border-cyan-500">
+                        <option value="trial_booked">Sinov Darsiga Yozildi</option>
+                        <option value="interested">Qiziqmoqda (Ma'lumot oldi)</option>
+                        <option value="enrolled">O'qishga Qabul Qilindi</option>
+                        <option value="no_answer">Go'shakni Ko'tarmadi</option>
+                        <option value="rejected">Rad Etdi</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1.5">Suhbat Vaqti (soniya)</label>
+                    <input type="number" name="duration_seconds" value="90" min="5" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white text-sm focus:outline-none focus:border-cyan-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1.5">Qayta Bog'lanish Sanasi</label>
+                    <input type="datetime-local" name="callback_date" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white text-sm focus:outline-none focus:border-cyan-500">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase mb-1.5">Suhbat Tafsilotlari / Izoh</label>
+                <textarea name="notes" rows="3" placeholder="Mijoz nimaga qiziqdi, qaysi kurs yoki vaqt to'g'ri keladi..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-cyan-500"></textarea>
+            </div>
+
+            <div class="pt-3 flex items-center justify-end space-x-3">
+                <button type="button" onclick="closeModal('new-call-modal')" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-semibold">
+                    Bekor qilish
+                </button>
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold shadow-lg shadow-blue-500/25">
+                    Qayd Qilish
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

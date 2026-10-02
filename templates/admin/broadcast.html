@@ -1,0 +1,174 @@
+{% extends "admin/layout.html" %}
+
+{% block page_title %}
+    <span>📢 Ommaviy Telegram Xabar Yuborish (Broadcast)</span>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Left 2 Cols: Form & Templates -->
+    <div class="lg:col-span-2 space-y-6">
+        <div class="glass-panel p-6 rounded-3xl border border-slate-800">
+            <h3 class="text-xl font-bold text-white flex items-center gap-2 mb-2">
+                <i class="fab fa-telegram text-blue-400"></i>
+                Yangi Ommaviy Bildirishnoma Yaratish
+            </h3>
+            <p class="text-slate-400 text-xs mb-6">
+                Telegram bot orqali tanlangan o'quvchilar, guruhlar yoki ota-onalarga bir vaqtda xabar tarqating.
+            </p>
+
+            <!-- Quick Template Buttons -->
+            <div class="mb-6">
+                <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Tezkor Tayyor Shablonlar:</label>
+                <div class="flex flex-wrap gap-2">
+                    <button type="button" onclick="setTemplate('holiday')" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition-all">
+                        🎉 Bayram Tabrigi
+                    </button>
+                    <button type="button" onclick="setTemplate('exam')" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition-all">
+                        📝 Mock Imtihon E'loni
+                    </button>
+                    <button type="button" onclick="setTemplate('meeting')" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition-all">
+                        👨‍👩‍👦 Ota-onalar Majlisi
+                    </button>
+                    <button type="button" onclick="setTemplate('payment')" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition-all">
+                        💳 To'lov Eslatmasi
+                    </button>
+                </div>
+            </div>
+
+            <form action="{{ url_for('admin_broadcast_send') }}" method="POST" class="space-y-5" onsubmit="return confirm('Haqiqatan ham barcha tanlangan foydalanuvchilarga xabarni ommaviy yubormoqchimisiz?');">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1.5">Qabul qiluvchilar auditoriyasi *</label>
+                    <select name="target_audience" id="target_audience" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-cyan-500">
+                        <option value="all_students">Barcha Faol O'quvchilar ({{ students_count }} ta o'quvchi)</option>
+                        <option value="all_parents">Barcha Ota-onalar ({{ parents_count }} ta ota-ona)</option>
+                        <optgroup label="Muayyan Guruh O'quvchilari">
+                            {% for g in groups %}
+                            <option value="group_{{ g.id }}">{{ g.name }} guruhi</option>
+                            {% endfor %}
+                        </optgroup>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1.5">Xabar Sarlavhasi (Mavzu) *</label>
+                    <input type="text" name="broadcast_title" id="broadcast_title" required placeholder="Masalan: Muhim E'lon: Ertangi darslar jadvali haqida" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-cyan-500" oninput="updatePreview()">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1.5">Xabar Matni *</label>
+                    <textarea name="broadcast_body" id="broadcast_body" rows="6" required placeholder="Xabaringiz matnini kiriting..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-cyan-500 leading-relaxed font-sans" oninput="updatePreview()"></textarea>
+                </div>
+
+                <div class="pt-2 flex items-center justify-between">
+                    <span class="text-xs text-slate-500 flex items-center gap-1.5">
+                        <i class="fas fa-shield-halved text-cyan-400"></i>
+                        Bot: <b>{{ bot_name }}</b>
+                    </span>
+                    <button type="submit" class="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-500 hover:from-blue-500 hover:to-teal-400 text-white font-black text-sm shadow-xl shadow-cyan-500/20 flex items-center gap-2 transition-all">
+                        <i class="fas fa-paper-plane"></i>
+                        <span>Telegramga Ommaviy Tarqatish</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Right Col: Live Telegram Preview & Info -->
+    <div class="space-y-6">
+        <div class="glass-panel p-6 rounded-3xl border border-slate-800">
+            <h4 class="text-xs font-bold text-slate-400 uppercase mb-4 flex items-center gap-2">
+                <i class="fas fa-mobile-screen text-cyan-400"></i>
+                Telegramdagi Ko'rinishi (Live Preview)
+            </h4>
+
+            <!-- Phone Frame Mockup -->
+            <div class="bg-[#0e1621] rounded-2xl p-4 border border-slate-800 shadow-xl text-white">
+                <div class="flex items-center space-x-2.5 pb-3 border-b border-slate-800/80 mb-3">
+                    <div class="w-8 h-8 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold text-xs">
+                        AG
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold text-white leading-none">ANTIGRAVITY BOT</div>
+                        <span class="text-[10px] text-cyan-400 font-mono">bot</span>
+                    </div>
+                </div>
+
+                <div class="bg-[#182533] rounded-xl p-3.5 text-xs space-y-2 border border-[#2b5278]/40 shadow-sm">
+                    <div class="text-cyan-400 font-bold" id="preview-header">
+                        📢 ANTIGRAVITY BILDIRISHNOMA
+                    </div>
+                    <div class="font-bold text-white text-sm" id="preview-title">
+                        Mavzu kiritilmagan
+                    </div>
+                    <div class="text-slate-300 leading-relaxed whitespace-pre-line text-[11px]" id="preview-body">
+                        Xabar matni bu yerda ko'rinadi...
+                    </div>
+                    <div class="pt-2 border-t border-slate-700/60 text-[9px] text-slate-400 flex items-center justify-between">
+                        <span>ANTIGRAVITY Ta'lim Markazi</span>
+                        <span>12:00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-panel p-6 rounded-3xl border border-slate-800">
+            <h4 class="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-2">
+                <i class="fas fa-chart-simple text-cyan-400"></i>
+                Tarqatish Statistikasi
+            </h4>
+            <div class="space-y-3 text-xs text-slate-300">
+                <div class="flex items-center justify-between py-1 border-b border-slate-800">
+                    <span class="text-slate-400">Faol O'quvchilar:</span>
+                    <span class="font-bold text-white">{{ students_count }} nafar</span>
+                </div>
+                <div class="flex items-center justify-between py-1 border-b border-slate-800">
+                    <span class="text-slate-400">Ota-onalar:</span>
+                    <span class="font-bold text-white">{{ parents_count }} nafar</span>
+                </div>
+                <div class="flex items-center justify-between py-1 border-b border-slate-800">
+                    <span class="text-slate-400">Faol Guruhlar:</span>
+                    <span class="font-bold text-cyan-400">{{ groups|length }} ta</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const templates = {
+    holiday: {
+        title: "🎉 Kirib Kelayotgan Bayram Bilan Tabriklaymiz!",
+        body: "Hurmatli o'quvchilar va ota-onalar!\n\nSizlarni bayram munosabati bilan ANTIGRAVITY ta'lim markazi jamoasi nomidan samimiy muborakbod etamiz!\n\nBayram kunlari darslar jadvalida o'zgarishlar bo'lsa qo'shimcha xabar beriladi. Sizga sihat-salomatlik va o'qishlaringizda ulkan zafarlar tilaymiz!"
+    },
+    exam: {
+        title: "📝 Shanba Kuni Mock Imtihoni Bo'lib O'tadi",
+        body: "Hurmatli o'quvchilar!\n\nEslatib o'tamiz, navbatdagi amaliy nazorat va Mock imtihoni shu haftaning Shanba kuni soat 14:00 da markazimizning asosiy zalida o'tkaziladi.\n\nIltimos, darsga kechikmasdan keling va o'quv qurollaringizni olib kelishni unutmang!"
+    },
+    meeting: {
+        title: "👨‍👩‍👦 Hurmatli Ota-onalar: Ochiq Majlis E'loni",
+        body: "Assalomu alaykum, hurmatli ota-onalar!\n\nFarzandlaringizning o'zlashtirish darajasi va yangi o'quv dasturlarini muhokama qilish uchun yakshanba kuni soat 11:00 da ota-onalar yig'ilishi rejalashtirilgan.\n\nBarcha ota-onalarning qatnashishi muhim ahamiyatga ega."
+    },
+    payment: {
+        title: "💳 Ta'lim To'lovlari Bo'yicha Muhim Eslatma",
+        body: "Hurmatli o'quvchilar va ota-onalar!\n\nO'quv jarayonlarining to'xtovsiz davom etishi uchun oylik to'lovlarni o'z vaqtida amalga oshirishingizni so'raymiz.\n\nTo'lovlarni filial kassasida yoki Payme/Click ilovalari orqali masofadan amalga oshirishingiz mumkin."
+    }
+};
+
+function setTemplate(key) {
+    const t = templates[key];
+    if (t) {
+        document.getElementById('broadcast_title').value = t.title;
+        document.getElementById('broadcast_body').value = t.body;
+        updatePreview();
+    }
+}
+
+function updatePreview() {
+    const title = document.getElementById('broadcast_title').value;
+    const body = document.getElementById('broadcast_body').value;
+    document.getElementById('preview-title').innerText = title || "Mavzu kiritilmagan";
+    document.getElementById('preview-body').innerText = body || "Xabar matni bu yerda ko'rinadi...";
+}
+</script>
+{% endblock %}
